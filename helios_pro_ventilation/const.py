@@ -35,11 +35,6 @@ class HeliosVar(IntEnum):
         self.access = access
         self.note = note
 
-    # Back-compat shim: some code may call HeliosVar.Var_XX.index
-    @property
-    def index(self) -> int:
-        return int(self)
-
     # Calendar and date/time
     Var_00_calendar_mon     = (0x00, 8, 24, None, False, 1.0, "rw", "24 × 8-bit")
     Var_01_calendar_tue     = (0x01, 8, 24, None, False, 1.0, "rw", "24 × 8-bit")
@@ -144,7 +139,4 @@ class HeliosVar(IntEnum):
     Var_66_unknown          = (0x66, 16, 1, None, False, 1.0, "rw", "16-bit 0x90 0x01 (400)")
     Var_67_unknown          = (0x67, 32, 1, None, False, 1.0, "rw", "32-bit 0x00 0x00 0F 0F")
 
-    # Back-compat alias: some older code referred to "Var_10_fan_level" for writes.
-    # Map it to the known fan level index 0x35 so attribute lookups succeed.
-    Var_10_fan_level = Var_35_fan_level
 
