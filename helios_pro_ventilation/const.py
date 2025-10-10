@@ -144,3 +144,7 @@ class HeliosVar(IntEnum):
     Var_66_unknown          = (0x66, 16, 1, None, False, 1.0, "rw", "16-bit 0x90 0x01 (400)")
     Var_67_unknown          = (0x67, 32, 1, None, False, 1.0, "rw", "32-bit 0x00 0x00 0F 0F")
 
+    # Back-compat alias: some older code referred to "Var_10_fan_level" for writes.
+    # Map it to the known fan level index 0x35 so attribute lookups succeed.
+    Var_10_fan_level = Var_35_fan_level
+
