@@ -8,5 +8,12 @@
 - Added dev harness: `scripts/fake_helios_bridge.py` TCP server emitting pings and Var_3A frames for local testing.
 - Updated startup log to v2.7.0.
 
+## 2.8.0 — 2025-10-10
+- Feature: add one-shot debug scanner to read all HeliosVar-defined variables and log their decoded values.
+	- New switch entity to trigger the scan once; turns off after completion.
+	- Rate-limited requests (>= 500 ms between reads) via TX queue.
+	- Generic parsing leverages HeliosVar metadata to decode and log values with units.
+	- Implementation is minimally intrusive: new debug_scanner.py and switch.py, tiny hooks only.
+
 ## 2.6.1 — previous
 - Minor fixes and metadata updates.
