@@ -3,7 +3,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
-from .const import DOMAIN
+from .const import DOMAIN, HeliosVar
 from .coordinator import HeliosCoordinator
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
@@ -45,7 +45,15 @@ class HeliosBaseEntity:
 class HeliosNumberSensor(HeliosBaseEntity, SensorEntity):
     def __init__(self, coord, key, name, unit, entry):
         super().__init__(coord, key, name, entry)
-        self._unit = unit
+        # Prefer unit from HeliosVar when known (for keys mapping to a VAR)
+        var_units_map = {
+            "fan_level": HeliosVar.Var_35_fan_level.unit,
+            "temp_outdoor": HeliosVar.Var_3A_sensors_temp.unit,
+            "temp_extract": HeliosVar.Var_3A_sensors_temp.unit,
+            "temp_exhaust": HeliosVar.Var_3A_sensors_temp.unit,
+            "temp_supply": HeliosVar.Var_3A_sensors_temp.unit,
+        }
+        self._unit = var_units_map.get(key, unit)
     @property
     def native_value(self): return self._coord.data.get(self._key)
     @property

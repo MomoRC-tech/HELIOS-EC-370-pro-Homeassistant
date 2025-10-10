@@ -65,23 +65,18 @@ class HeliosCoordinatorWithQueue(HeliosCoordinator):
         _LOGGER.debug("Queued frame: %s", frame.hex(" "))
 
     # ---------- WRITE FRAME BUILDERS ----------
-    def _build_fan_frame(self, data1: int, data2: int) -> bytes:
-        """Build proper Helios fan-level write frame."""
-        payload = bytes([
-            CLIENT_ID,            # our address
-            0x01,                 # write command
-            0x03,                 # payload length (Var + 2 bytes)
-            HeliosVar.Var_35_fan_level,
-            data1,
-            data2,
-        ])
+    def _build_write_frame(self, var_index: int, *data_bytes: int) -> bytes:
+        """Generic write frame builder: [CLIENT][0x01][len][var][data...][chk]."""
+        length = 1 + len(data_bytes)
+        payload = bytes([CLIENT_ID, 0x01, length, var_index, *data_bytes])
         chk = _checksum(payload)
         return payload + bytes([chk])
 
     # ---------- SERVICE HANDLERS ----------
     def set_auto_mode(self, enabled: bool):
         """Enable or disable AUTO mode."""
-        frame = self._build_fan_frame(0xAA, 0x01 if enabled else 0x00)
+        # New API: write to auto_mode variable (0x11) with 0/1
+        frame = self._build_write_frame(HeliosVar.Var_11_auto_mode.index, 0x01 if enabled else 0x00)
         self.queue_frame(frame)
         _LOGGER.info(
             "HeliosPro: queued %s mode frame → %s",
@@ -92,7 +87,8 @@ class HeliosCoordinatorWithQueue(HeliosCoordinator):
     def set_fan_level(self, level: int):
         """Set manual fan level 0–4."""
         level = max(0, min(4, level))
-        frame = self._build_fan_frame(level, 0xBB)
+        # New API: write to fan_level variable (0x10) with 0..4
+        frame = self._build_write_frame(HeliosVar.Var_10_fan_level.index, level)
         self.queue_frame(frame)
         _LOGGER.info(
             "HeliosPro: queued manual fan level %d frame → %s",

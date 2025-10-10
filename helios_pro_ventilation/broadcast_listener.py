@@ -97,7 +97,7 @@ class HeliosBroadcastReader(threading.Thread):
 
     def _cyclic_enqueuer(self):
         while not self.stop_event.is_set():
-            frame = self._build_read_request(HeliosVar.Var_3A_sensors_temp)
+            frame = self._build_read_request(HeliosVar.Var_3A_sensors_temp.index)
             if hasattr(self.coord, 'queue_frame'):
                 self.coord.queue_frame(frame)
             time.sleep(30)
@@ -116,7 +116,7 @@ class HeliosBroadcastReader(threading.Thread):
                 try:
                     self.sock.sendall(frame)
                     var_idx = frame[3] if len(frame) >= 5 else None
-                    if var_idx == HeliosVar.Var_3A_sensors_temp:
+                    if var_idx == HeliosVar.Var_3A_sensors_temp.index:
                         _LOGGER.debug("Sent Var_3A sensor read request: %s", frame.hex(' '))
                     else:
                         _LOGGER.debug("Sent frame: %s", frame.hex(' '))
