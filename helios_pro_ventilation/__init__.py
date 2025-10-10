@@ -53,7 +53,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    _LOGGER.info("✅ Helios EC-Pro v2.6.0 initialized for %s:%d (entry=%s)", host, port, entry.entry_id)
+    _LOGGER.info("✅ Helios EC-Pro v2.7.0 initialized for %s:%d (entry=%s)", host, port, entry.entry_id)
 
     # ----- Services (register once) -----
     if not hass.services.has_service(DOMAIN, "set_fan_level"):

@@ -1,7 +1,7 @@
 {
   "domain": "helios_pro_ventilation",
   "name": "Helios EC-Pro Ventilation",
-  "version": "2.6.1",
+  "version": "2.7.0",
   "documentation": "https://github.com/yourname/helios_pro_ventilation",
   "issue_tracker": "https://github.com/yourname/helios_pro_ventilation/issues",
   "requirements": [],
