@@ -54,10 +54,10 @@ class HeliosClimate(ClimateEntity):
             manufacturer="Helios",
             model="EC-Pro",
         )
-        # Optional: Entity beim Koordinator registrieren (falls vorhanden)
+        # Register for push updates from the coordinator
         try:
-            if hasattr(coord, "add_entity"):
-                coord.add_entity(self)
+            if hasattr(coord, "register_entity"):
+                coord.register_entity(self)
         except Exception:
             pass
 
@@ -83,7 +83,6 @@ class HeliosClimate(ClimateEntity):
         auto = bool(self._coord.data.get("auto_mode", False))
         # OFF only if manual and level 0; any auto or level>0 is FAN_ONLY
         return HVACMode.OFF if (fan_level <= 0 and not auto) else HVACMode.FAN_ONLY
-        return HVACMode.FAN_ONLY
 
     @property
     def hvac_action(self):
@@ -91,7 +90,6 @@ class HeliosClimate(ClimateEntity):
         auto = bool(self._coord.data.get("auto_mode", False))
         # Expose current action explicitly (drawn by Mushroom)
         return HVACAction.FAN if (fan_level > 0 or auto) else HVACAction.OFF
-        return HVACAction.OFF
 
     @property
     def preset_mode(self) -> Optional[str]:
@@ -100,7 +98,8 @@ class HeliosClimate(ClimateEntity):
     @property
     def fan_mode(self) -> Optional[str]:
         lvl = int(self._coord.data.get("fan_level", 0) or 0)
-        return str(min(max(lvl, 1), 4)) if lvl > 0 else None
+        # Align with supported fan modes ["0".."4"]: report "0" when level is 0
+        return str(min(max(lvl, 0), 4))
 
     @property
     def current_temperature(self) -> Optional[float]:

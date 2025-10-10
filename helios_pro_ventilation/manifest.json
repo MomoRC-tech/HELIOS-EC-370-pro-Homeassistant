@@ -2,12 +2,12 @@
   "domain": "helios_pro_ventilation",
   "name": "Helios EC-Pro Ventilation",
   "version": "2.7.0",
-  "documentation": "https://github.com/yourname/helios_pro_ventilation",
-  "issue_tracker": "https://github.com/yourname/helios_pro_ventilation/issues",
+  "documentation": "https://github.com/MomoRC-tech/HELIOS-EC-370-pro-Homeassistant",
+  "issue_tracker": "https://github.com/MomoRC-tech/HELIOS-EC-370-pro-Homeassistant/issues",
   "requirements": [],
   "dependencies": [],
   "codeowners": [
-    "@yourname"
+    "@MomoRC-tech"
   ],
   "iot_class": "local_push",
   "config_flow": true

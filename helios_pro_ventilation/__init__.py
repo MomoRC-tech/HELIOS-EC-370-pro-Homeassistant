@@ -6,7 +6,7 @@ from homeassistant.const import Platform
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.service import async_set_service_schema
 from homeassistant.util.yaml import load_yaml
-import os
+import os, json
 
 from .const import DOMAIN, DEFAULT_HOST, DEFAULT_PORT
 from .coordinator import HeliosCoordinatorWithQueue
@@ -53,7 +53,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    _LOGGER.info("✅ Helios EC-Pro v2.7.0 initialized for %s:%d (entry=%s)", host, port, entry.entry_id)
+    # Read version from manifest.json to keep log in sync with manifest
+    version = None
+    try:
+        manifest_path = os.path.join(os.path.dirname(__file__), "manifest.json")
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            version = json.load(f).get("version")
+    except Exception:
+        pass
+    ver_str = f"v{version}" if version else "(version unknown)"
+    _LOGGER.info("✅ Helios EC-Pro %s initialized for %s:%d (entry=%s)", ver_str, host, port, entry.entry_id)
 
     # ----- Services (register once) -----
     if not hass.services.has_service(DOMAIN, "set_fan_level"):
