@@ -35,6 +35,11 @@ class HeliosVar(IntEnum):
         self.access = access
         self.note = note
 
+    # Back-compat shim: some code may call HeliosVar.Var_XX.index
+    @property
+    def index(self) -> int:
+        return int(self)
+
     # Calendar and date/time
     Var_00_calendar_mon     = (0x00, 8, 24, None, False, 1.0, "rw", "24 × 8-bit")
     Var_01_calendar_tue     = (0x01, 8, 24, None, False, 1.0, "rw", "24 × 8-bit")
