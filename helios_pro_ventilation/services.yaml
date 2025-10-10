@@ -1,0 +1,28 @@
+
+set_fan_level:
+  name: Set fan level
+  description: Set the Helios manual fan level (0–4).
+  fields:
+    level:
+      name: Level
+      description: Manual fan level (0 is min/off, 4 is max).
+      required: true
+      example: 3
+      selector:
+        number:
+          min: 0
+          max: 4
+          mode: box
+          step: 1
+
+set_auto_mode:
+  name: Set auto mode
+  description: Enable or disable automatic mode.
+  fields:
+    enabled:
+      name: Enabled
+      description: True = AUTO mode, False = MANUAL mode.
+      required: false
+      default: true
+      selector:
+        boolean:
