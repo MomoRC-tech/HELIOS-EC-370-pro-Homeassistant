@@ -1,6 +1,10 @@
 Helios EC‑Pro custom integration for Home Assistant
 
-This custom component integrates Helios EC‑Pro ventilation units over a TCP bridge into Home Assistant. It exposes sensors and climate control and writes commands during brief "send slot" windows after pings on the RS‑485 bus.
+This custom component integrates Helios EC‑Pro ventilation units over a TCP bridge into Home Assistant. It exposes sensors and fan/climate control and writes commands during brief "send slot" windows after pings on the RS‑485 bus.
+
+Note: This project is verified to work with a HELIOS EC 370 pro ventilation system (circa 2012). The RS‑485 interface is provided by a Waveshare RS485‑to‑Ethernet module connected directly to the Helios RJ12 jack used for “Bedienteile” (control panels).
+
+Full documentation: see `helios_pro_ventilation/documentation.md`.
 
 ## Features
 - Fan control (auto/manual, levels 0–4)
@@ -73,6 +77,7 @@ logger:
 ## Services
 - `set_auto_mode` (enabled: boolean)
 - `set_fan_level` (level: 0–4)
+- `set_party_enabled` (enabled: boolean)
 
 ## Troubleshooting
 - If entities don’t update, verify the bridge connection and check logs for missing pings.
