@@ -36,6 +36,8 @@ class Platform:
     BINARY_SENSOR = "binary_sensor"
     CLIMATE = "climate"
     SWITCH = "switch"
+    FAN = "fan"
+    SELECT = "select"
 const.Platform = Platform
 
 # homeassistant.helpers.config_validation
@@ -60,6 +62,9 @@ def load_yaml(path):
 yaml_mod.load_yaml = load_yaml
 
 # homeassistant.components.switch
+components_pkg = types.ModuleType("homeassistant.components")
+components_pkg.__path__ = []  # mark as namespace/package
+sys.modules.setdefault("homeassistant.components", components_pkg)
 comp_switch = types.ModuleType("homeassistant.components.switch")
 class SwitchEntity:
     def __init__(self):
@@ -99,3 +104,27 @@ vol.Coerce = _identity
 vol.Range = _identity
 
 sys.modules.setdefault("voluptuous", vol)
+
+# Stub out homeassistant.components.http for HomeAssistantView
+sys.modules.setdefault("homeassistant.components", components_pkg)
+comp_http = types.ModuleType("homeassistant.components.http")
+class HomeAssistantView:  # minimal base
+    url = "/"
+    name = "test"
+    requires_auth = False
+    async def get(self, request):
+        return None
+comp_http.HomeAssistantView = HomeAssistantView
+sys.modules.setdefault("homeassistant.components.http", comp_http)
+
+# Stub out aiohttp.web Response used by __init__
+aiohttp = types.ModuleType("aiohttp")
+web = types.ModuleType("aiohttp.web")
+class Response:
+    def __init__(self, body=b"", content_type="application/octet-stream"):
+        self.body = body
+        self.content_type = content_type
+web.Response = Response
+aiohttp.web = web
+sys.modules.setdefault("aiohttp", aiohttp)
+sys.modules.setdefault("aiohttp.web", web)

@@ -81,35 +81,9 @@ class HeliosClimate(ClimateEntity):
 
     @property
     def entity_picture(self) -> Optional[str]:
-        # Serve an optional device image via integration API (falls back to /local if needed)
-        try:
-            if self._entity_picture_exists is False:
-                return None
-            if self.hass is None:
-                return None
-            # Existence check: true if either www image or packaged image exists
-            if self._entity_picture_exists is None:
-                exists = False
-                try:
-                    for fn in ("MomoRC_HELIOS_HASS.png", "helios_ec_pro.png"):
-                        fs_path = self.hass.config.path(f"www/{fn}")
-                        if os.path.exists(fs_path):
-                            exists = True
-                            break
-                except Exception:
-                    pass
-                try:
-                    for fn in ("MomoRC_HELIOS_HASS.png", "helios_ec_pro.png"):
-                        pkg_path = os.path.join(os.path.dirname(__file__), fn)
-                        if os.path.exists(pkg_path):
-                            exists = True
-                            break
-                except Exception:
-                    pass
-                self._entity_picture_exists = exists
-            return self._entity_picture_url if self._entity_picture_exists else None
-        except Exception:
-            return None
+        # Always return our API endpoint; it serves www or packaged image,
+        # and falls back to a 1x1 transparent PNG if none found.
+        return self._entity_picture_url
     # -----------------------
     #      Live-Daten
     # -----------------------

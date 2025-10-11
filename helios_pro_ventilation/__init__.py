@@ -74,7 +74,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             class HeliosImageView(HomeAssistantView):
                 url = "/api/helios_pro_ventilation/image.png"
                 name = "api:helios_pro_ventilation:image"
-                requires_auth = True
+                requires_auth = False
 
                 async def get(self, request):  # type: ignore[override]
                     hass_local: HomeAssistant = request.app["hass"]  # type: ignore

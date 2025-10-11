@@ -43,3 +43,29 @@ def test_generic_bad_checksum_drops_byte():
     result = try_parse_var_generic(buf)
     assert result is None
     assert len(buf) == before - 1
+
+
+def test_generic_parsing_date_time_bytes():
+    # Var_07 should now decode three 8-bit bytes: day, month, year (0..99)
+    day, month, year = 11, 10, 25  # 2025-10-11
+    var = HeliosVar.Var_07_date_month_year
+    payload = bytes([day, month, year])
+    frame = _build_generic_frame(var, payload)
+    buf = bytearray(frame)
+    res = try_parse_var_generic(buf)
+    assert res is not None
+    assert res["var"] == var
+    assert res["values"] == [day, month, year]
+    assert len(buf) == 0
+
+    # Var_08 should decode two 8-bit bytes: hour, minute
+    hour, minute = 7, 5
+    var = HeliosVar.Var_08_time_hour_min
+    payload = bytes([hour, minute])
+    frame = _build_generic_frame(var, payload)
+    buf = bytearray(frame)
+    res = try_parse_var_generic(buf)
+    assert res is not None
+    assert res["var"] == var
+    assert res["values"] == [hour, minute]
+    assert len(buf) == 0

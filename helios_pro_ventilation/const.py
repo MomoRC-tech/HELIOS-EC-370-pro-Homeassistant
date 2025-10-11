@@ -43,8 +43,9 @@ class HeliosVar(IntEnum):
     Var_04_calendar_fri     = (0x04, 8, 24, None, False, 1.0, "rw", "24 × 8-bit")
     Var_05_calendar_sat     = (0x05, 8, 24, None, False, 1.0, "rw", "24 × 8-bit")
     Var_06_calendar_sun     = (0x06, 8, 24, None, False, 1.0, "rw", "24 × 8-bit (low/high half-hour)")
-    Var_07_date_month_year  = (0x07, 24, 1, None, False, 1.0, "rw", "24-bit ([0]=day, [1]=month, [2]=year)")
-    Var_08_time_hour_min    = (0x08, 16, 1, None, False, 1.0, "rw", "16-bit ([0]=hour, [1]=minutes)")
+    # Represent date/time as individual bytes for easier parsing/mapping
+    Var_07_date_month_year  = (0x07, 8, 3, None, False, 1.0, "rw", "3 × 8-bit ([0]=day, [1]=month, [2]=year since 2000)")
+    Var_08_time_hour_min    = (0x08, 8, 2, None, False, 1.0, "rw", "2 × 8-bit ([0]=hour, [1]=minutes)")
 
     # Modes and times
     Var_0D_back_up_heating  = (0x0D, 8, 1, None, False, 1.0, "rw", "8-bit (0=disabled, 1=enabled)")

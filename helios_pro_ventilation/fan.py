@@ -51,7 +51,8 @@ class HeliosFan(FanEntity):
         self._coord = coord
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}-fan"
-        self._entity_picture_url = "/local/helios_ec_pro.png"
+        # Use integration API endpoint which serves config/www or packaged image
+        self._entity_picture_url = "/api/helios_pro_ventilation/image.png"
         self._entity_picture_exists: Optional[bool] = None
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
@@ -67,34 +68,9 @@ class HeliosFan(FanEntity):
 
     @property
     def entity_picture(self) -> Optional[str]:
-        # Optional: show /local/helios_ec_pro.png if user placed it in config/www
-        try:
-            if self._entity_picture_exists is False:
-                return None
-            if self.hass is None:
-                return None
-            if self._entity_picture_exists is None:
-                exists = False
-                try:
-                    for fn in ("MomoRC_HELIOS_HASS.png", "helios_ec_pro.png"):
-                        fs_path = self.hass.config.path(f"www/{fn}")
-                        if os.path.exists(fs_path):
-                            exists = True
-                            break
-                except Exception:
-                    pass
-                try:
-                    for fn in ("MomoRC_HELIOS_HASS.png", "helios_ec_pro.png"):
-                        pkg_path = os.path.join(os.path.dirname(__file__), fn)
-                        if os.path.exists(pkg_path):
-                            exists = True
-                            break
-                except Exception:
-                    pass
-                self._entity_picture_exists = exists
-            return self._entity_picture_url if self._entity_picture_exists else None
-        except Exception:
-            return None
+        # Always return our API endpoint; it serves www or packaged image,
+        # and falls back to a 1x1 transparent PNG if none found.
+        return self._entity_picture_url
 
     # ---------- State ----------
     @property

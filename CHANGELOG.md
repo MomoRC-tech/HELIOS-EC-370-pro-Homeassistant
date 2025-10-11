@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.2.1 — 2025-10-11
+- Fix: Device date/time sensors now decode correctly and are polled at startup, with a 10-minute refresh cadence so values remain available.
+- Tests: Added unit tests for generic parsing of Var_07 (date) and Var_08 (time).
+- Maintenance: Minor test stubs to allow running pytest without Home Assistant installed.
+
 ## 3.2.0 — 2025-10-11
 - UI: Optional device image on cards — Climate/Fan now show an image if `helios_ec_pro.png` is present either in `config/www` or packaged in the integration folder. Integration exposes `/api/helios_pro_ventilation/image.png` and falls back to a tiny transparent PNG if none found.
 - UX: Improved default entity organization for better "Add to dashboard" suggestions — primary controls/sensors are prominent; diagnostic/noisy entities are categorized and many disabled by default.

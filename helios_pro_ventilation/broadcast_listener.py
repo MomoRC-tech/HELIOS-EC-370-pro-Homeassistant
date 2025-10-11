@@ -204,6 +204,9 @@ class HeliosBroadcastReader(threading.Thread):
         last_v3a = 0.0
         last_v10 = 0.0
         last_v60 = 0.0
+        # Date/time more frequent polling
+        last_v07 = 0.0
+        last_v08 = 0.0
         # Hourly-ish vars
         last_hourly = 0.0
         # One-time at startup vars
@@ -242,6 +245,18 @@ class HeliosBroadcastReader(threading.Thread):
                     self.coord.queue_frame(frame)
                 last_v60 = now
 
+            # Poll device date/time every 10 minutes to keep sensors updated
+            if now - last_v07 >= 600.0:
+                frame = self._build_read_request(HeliosVar.Var_07_date_month_year)
+                if hasattr(self.coord, 'queue_frame'):
+                    self.coord.queue_frame(frame)
+                last_v07 = now
+            if now - last_v08 >= 600.0:
+                frame = self._build_read_request(HeliosVar.Var_08_time_hour_min)
+                if hasattr(self.coord, 'queue_frame'):
+                    self.coord.queue_frame(frame)
+                last_v08 = now
+
             # Queue one-time reads at startup for mostly-static values
             if not startup_done:
                 for var in (
@@ -249,6 +264,9 @@ class HeliosBroadcastReader(threading.Thread):
                     HeliosVar.Var_37_min_fan_level,
                     HeliosVar.Var_38_change_filter,
                     HeliosVar.Var_49_nachlaufzeit,
+                    # Also read device date/time early so sensors populate quickly
+                    HeliosVar.Var_07_date_month_year,
+                    HeliosVar.Var_08_time_hour_min,
                 ):
                     frame = self._build_read_request(var)
                     if hasattr(self.coord, 'queue_frame'):
