@@ -102,10 +102,119 @@ MIT — see LICENSE
 See CHANGELOG.md
 
 ## Optional: Device image on cards
-If you want the Climate and Fan entities to show a device picture on cards/dashboards, you have two options (both filenames are supported: `MomoRC_HELIOS_HASS.png` or `helios_ec_pro.png`):
-- Place the image into your Home Assistant config folder under `www/` (e.g., `config/www/MomoRC_HELIOS_HASS.png`). The entities will automatically use it from `/local/...`.
-- Or place the image in the integration folder at `custom_components/helios_pro_ventilation/MomoRC_HELIOS_HASS.png`. The integration will serve it via `/api/helios_pro_ventilation/image.png` and entities will use it automatically.
-Note: After adding the file, reload the integration or restart Home Assistant; you may also need to refresh the browser cache.
+Entities always use the integration endpoint `/api/helios_pro_ventilation/image.png` for their `entity_picture`. That endpoint will serve either:
+- a file from your Home Assistant `config/www` folder (preferred filename: `MomoRC_HELIOS_HASS.png`, fallback `helios_ec_pro.png`), or
+- a packaged image shipped with the integration if no file is found in `www`.
+
+Ways to provide an image (both filenames supported: `MomoRC_HELIOS_HASS.png` or `helios_ec_pro.png`):
+- Place it under `config/www/` (recommended for easy customization)
+- Or place it in `custom_components/helios_pro_ventilation/`
+
+Tip: After adding/changing the file, reload the integration or restart Home Assistant, and refresh your browser cache.
+
+Note: The Integrations dashboard tile uses brand icons and will not display this image. Use Lovelace cards (below) or an entity info dialog to see it.
+
+## Lovelace examples: Climate and Fan
+Below are minimal, ready-to-copy examples showing the picture in standard cards and exposing common controls. Replace the entity ids with the ones from your system (for example `climate.helios_luftung` and `fan.helios_lufter`).
+
+### Picture Entity (Climate)
+```yaml
+type: picture-entity
+entity: climate.helios_luftung  # adjust to your entity id
+name: Helios EC-Pro
+show_state: true
+show_name: true
+```
+
+### Tile (Climate) with presets and fan modes
+Requires HA 2023.12+ for tile features.
+```yaml
+type: tile
+entity: climate.helios_luftung  # adjust to your entity id
+show_entity_picture: true
+features:
+	- type: climate-hvac-modes
+		hvac_modes:
+			- off
+			- fan_only
+	- type: climate-preset-modes
+	- type: climate-fan-modes
+```
+
+### Tile (Fan) with speed and preset
+```yaml
+type: tile
+entity: fan.helios_lufter  # adjust to your entity id
+show_entity_picture: true
+features:
+	- type: fan-speed
+	- type: fan-preset-mode
+```
+
+### Quick action buttons (optional)
+Manual and Auto presets via buttons:
+```yaml
+type: horizontal-stack
+cards:
+	- type: button
+		name: Manual
+		icon: mdi:hand-back-right
+		tap_action:
+			action: call-service
+			service: climate.set_preset_mode
+			target: { entity_id: climate.helios_luftung }
+			data: { preset_mode: manual }
+	- type: button
+		name: Auto
+		icon: mdi:robot
+		tap_action:
+			action: call-service
+			service: climate.set_preset_mode
+			target: { entity_id: climate.helios_luftung }
+			data: { preset_mode: auto }
+```
+
+Set level 0–4 via Climate fan_mode:
+```yaml
+type: grid
+columns: 5
+cards:
+	- type: button
+		name: 0
+		tap_action:
+			action: call-service
+			service: climate.set_fan_mode
+			target: { entity_id: climate.helios_luftung }
+			data: { fan_mode: "0" }
+	- type: button
+		name: 1
+		tap_action:
+			action: call-service
+			service: climate.set_fan_mode
+			target: { entity_id: climate.helios_luftung }
+			data: { fan_mode: "1" }
+	- type: button
+		name: 2
+		tap_action:
+			action: call-service
+			service: climate.set_fan_mode
+			target: { entity_id: climate.helios_luftung }
+			data: { fan_mode: "2" }
+	- type: button
+		name: 3
+		tap_action:
+			action: call-service
+			service: climate.set_fan_mode
+			target: { entity_id: climate.helios_luftung }
+			data: { fan_mode: "3" }
+	- type: button
+		name: 4
+		tap_action:
+			action: call-service
+			service: climate.set_fan_mode
+			target: { entity_id: climate.helios_luftung }
+			data: { fan_mode: "4" }
+```
 
 ## Roadmap / TODO
 See TODO.md for planned fixes and improvements.

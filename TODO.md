@@ -3,7 +3,7 @@
 Tracked follow-ups and ideas for the Helios EC‑Pro Home Assistant integration.
 
 ## Fixes
-- Device date/time sensors (Datum/Uhrzeit) show as unavailable — investigate why `date_str` / `time_str` remain None and ensure they’re polled/parsed correctly (generic Var 0x07/0x08 mapping path).
+- [done] Device date/time sensors (Datum/Uhrzeit) were unavailable — fixed generic Var 0x07/0x08 parsing, added startup reads and 10‑minute cadence; tests added.
 
 ## Entity organization
 - Evaluate all entities for correct category and visibility:
@@ -12,9 +12,9 @@ Tracked follow-ups and ideas for the Helios EC‑Pro Home Assistant integration.
   - Review device classes and units for consistency across sensors.
 
 ## UX / Presentation
-- Add a picture for the integration (device icon on the integration card); include asset under `helios_pro_ventilation/` and wire via `device_info` or manifest imagery if applicable.
-- Add a simple dashboard view YAML that pre-adds the main controls (Climate, Fan, Fan level Select, key sensors). Provide as example in docs.
+- Integrations dashboard icon cannot be customized by custom components; documented use of entity pictures instead. README updated with image endpoint details and card examples.
+- [done] Add a simple dashboard view YAML that pre-adds main controls (Climate/Fan) with Picture Entity/Tile examples; included in README.
 
 ## Notes
-- When addressing the date/time fix, verify scheduler reads for Var 0x07/0x08 and mapping in `broadcast_listener.py` → `coordinator.update_values` path.
-- Consider adding unit tests for generic var parsing (Var 0x07/0x08/0x48) and for entity availability rules.
+- Date/time fix: verified scheduler reads for Var 0x07/0x08 and mapping in `broadcast_listener.py` → `coordinator.update_values` path.
+- Unit tests exist for generic var parsing (Var 0x07/0x08) and Var_3A; consider adding tests for coordinator frame building and entity availability rules next.

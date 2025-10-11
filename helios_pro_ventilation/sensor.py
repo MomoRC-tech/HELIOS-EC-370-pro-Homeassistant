@@ -55,29 +55,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         HeliosNumberSensor(coord, "temp_supply", "Zulufttemperatur", "°C", entry),
         HeliosNumberSensor(coord, "party_curr_time_min", "Party verbleibend (min)", "min", entry),
         HeliosNumberSensor(coord, "bypass2_temp", "Bypass Temperatur 2", "°C", entry),
-            HeliosNumberSensor(coord, "party_time_min_preselect", "Party Zeit (Vorauswahl)", "min", entry),
-            HeliosNumberSensor(coord, "hours_on", "Betriebsstunden", "h", entry),
-            HeliosNumberSensor(coord, "min_fan_level", "Minimale Lüfterstufe", None, entry),
-            HeliosNumberSensor(coord, "change_filter_months", "Filterwechsel (Monate)", "months", entry),
-            HeliosNumberSensor(coord, "party_level", "Party Lüfterstufe", None, entry),
-            HeliosNumberSensor(coord, "zuluft_level", "Zuluft Lüfterstufe", None, entry),
-            HeliosNumberSensor(coord, "abluft_level", "Abluft Lüfterstufe", None, entry),
-            HeliosNumberSensor(coord, "bypass1_temp", "Bypass Temperatur 1", "°C", entry),
-            HeliosNumberSensor(coord, "frostschutz_temp", "Frostschutz Temperatur", "°C", entry),
-            HeliosNumberSensor(coord, "nachlaufzeit_s", "Nachlaufzeit", "s", entry),
-            HeliosNumberSensor(coord, "fan1_voltage_zuluft", "Stufe 1 Spannung Zuluft", "V", entry),
-            HeliosNumberSensor(coord, "fan1_voltage_abluft", "Stufe 1 Spannung Abluft", "V", entry),
-            HeliosNumberSensor(coord, "fan2_voltage_zuluft", "Stufe 2 Spannung Zuluft", "V", entry),
-            HeliosNumberSensor(coord, "fan2_voltage_abluft", "Stufe 2 Spannung Abluft", "V", entry),
-            HeliosNumberSensor(coord, "fan3_voltage_zuluft", "Stufe 3 Spannung Zuluft", "V", entry),
-            HeliosNumberSensor(coord, "fan3_voltage_abluft", "Stufe 3 Spannung Abluft", "V", entry),
-            HeliosNumberSensor(coord, "fan4_voltage_zuluft", "Stufe 4 Spannung Zuluft", "V", entry),
-            HeliosNumberSensor(coord, "fan4_voltage_abluft", "Stufe 4 Spannung Abluft", "V", entry),
-            HeliosTextSensor(coord, "software_version", "Software Version", entry),
-            HeliosTextSensor(coord, "date_str", "Datum (Gerät)", entry),
-            HeliosTextSensor(coord, "time_str", "Uhrzeit (Gerät)", entry),
-        HeliosBinarySensor(coord, "auto_mode", "Automatikmodus aktiv", entry),
-        HeliosBinarySensor(coord, "filter_warning", "Filterwechsel erforderlich", entry),
+        HeliosNumberSensor(coord, "party_time_min_preselect", "Party Zeit (Vorauswahl)", "min", entry),
+        HeliosNumberSensor(coord, "hours_on", "Betriebsstunden", "h", entry),
+        HeliosNumberSensor(coord, "min_fan_level", "Minimale Lüfterstufe", None, entry),
+        HeliosNumberSensor(coord, "change_filter_months", "Filterwechsel (Monate)", "months", entry),
+        HeliosNumberSensor(coord, "party_level", "Party Lüfterstufe", None, entry),
+        HeliosNumberSensor(coord, "zuluft_level", "Zuluft Lüfterstufe", None, entry),
+        HeliosNumberSensor(coord, "abluft_level", "Abluft Lüfterstufe", None, entry),
+        HeliosNumberSensor(coord, "bypass1_temp", "Bypass Temperatur 1", "°C", entry),
+        HeliosNumberSensor(coord, "frostschutz_temp", "Frostschutz Temperatur", "°C", entry),
+        HeliosNumberSensor(coord, "nachlaufzeit_s", "Nachlaufzeit", "s", entry),
+        HeliosNumberSensor(coord, "fan1_voltage_zuluft", "Stufe 1 Spannung Zuluft", "V", entry),
+        HeliosNumberSensor(coord, "fan1_voltage_abluft", "Stufe 1 Spannung Abluft", "V", entry),
+        HeliosNumberSensor(coord, "fan2_voltage_zuluft", "Stufe 2 Spannung Zuluft", "V", entry),
+        HeliosNumberSensor(coord, "fan2_voltage_abluft", "Stufe 2 Spannung Abluft", "V", entry),
+        HeliosNumberSensor(coord, "fan3_voltage_zuluft", "Stufe 3 Spannung Zuluft", "V", entry),
+        HeliosNumberSensor(coord, "fan3_voltage_abluft", "Stufe 3 Spannung Abluft", "V", entry),
+        HeliosNumberSensor(coord, "fan4_voltage_zuluft", "Stufe 4 Spannung Zuluft", "V", entry),
+        HeliosNumberSensor(coord, "fan4_voltage_abluft", "Stufe 4 Spannung Abluft", "V", entry),
+        HeliosTextSensor(coord, "software_version", "Software Version", entry),
+        HeliosTextSensor(coord, "date_str", "Datum (Gerät)", entry),
+        HeliosTextSensor(coord, "time_str", "Uhrzeit (Gerät)", entry),
     ]
     async_add_entities(entities)
     for e in entities:
@@ -95,24 +93,24 @@ class HeliosNumberSensor(HeliosBaseEntity, SensorEntity):
             "temp_supply": HeliosVar.Var_3A_sensors_temp.unit,
             "party_curr_time_min": HeliosVar.Var_10_party_curr_time.unit,
             "bypass2_temp": HeliosVar.Var_60_bypass2_temp.unit,
-                "party_time_min_preselect": HeliosVar.Var_11_party_time.unit,
-                "hours_on": HeliosVar.Var_15_hours_on.unit,
-                "min_fan_level": HeliosVar.Var_37_min_fan_level.unit,
-                "change_filter_months": HeliosVar.Var_38_change_filter.unit,
-                "party_level": HeliosVar.Var_42_party_level.unit,
-                "zuluft_level": HeliosVar.Var_45_zuluft_level.unit,
-                "abluft_level": HeliosVar.Var_46_abluft_level.unit,
-                "bypass1_temp": HeliosVar.Var_1E_bypass1_temp.unit,
-                "frostschutz_temp": HeliosVar.Var_1F_frostschutz.unit,
-                "nachlaufzeit_s": HeliosVar.Var_49_nachlaufzeit.unit,
-                "fan1_voltage_zuluft": HeliosVar.Var_16_fan_1_voltage.unit,
-                "fan1_voltage_abluft": HeliosVar.Var_16_fan_1_voltage.unit,
-                "fan2_voltage_zuluft": HeliosVar.Var_17_fan_2_voltage.unit,
-                "fan2_voltage_abluft": HeliosVar.Var_17_fan_2_voltage.unit,
-                "fan3_voltage_zuluft": HeliosVar.Var_18_fan_3_voltage.unit,
-                "fan3_voltage_abluft": HeliosVar.Var_18_fan_3_voltage.unit,
-                "fan4_voltage_zuluft": HeliosVar.Var_19_fan_4_voltage.unit,
-                "fan4_voltage_abluft": HeliosVar.Var_19_fan_4_voltage.unit,
+            "party_time_min_preselect": HeliosVar.Var_11_party_time.unit,
+            "hours_on": HeliosVar.Var_15_hours_on.unit,
+            "min_fan_level": HeliosVar.Var_37_min_fan_level.unit,
+            "change_filter_months": HeliosVar.Var_38_change_filter.unit,
+            "party_level": HeliosVar.Var_42_party_level.unit,
+            "zuluft_level": HeliosVar.Var_45_zuluft_level.unit,
+            "abluft_level": HeliosVar.Var_46_abluft_level.unit,
+            "bypass1_temp": HeliosVar.Var_1E_bypass1_temp.unit,
+            "frostschutz_temp": HeliosVar.Var_1F_frostschutz.unit,
+            "nachlaufzeit_s": HeliosVar.Var_49_nachlaufzeit.unit,
+            "fan1_voltage_zuluft": HeliosVar.Var_16_fan_1_voltage.unit,
+            "fan1_voltage_abluft": HeliosVar.Var_16_fan_1_voltage.unit,
+            "fan2_voltage_zuluft": HeliosVar.Var_17_fan_2_voltage.unit,
+            "fan2_voltage_abluft": HeliosVar.Var_17_fan_2_voltage.unit,
+            "fan3_voltage_zuluft": HeliosVar.Var_18_fan_3_voltage.unit,
+            "fan3_voltage_abluft": HeliosVar.Var_18_fan_3_voltage.unit,
+            "fan4_voltage_zuluft": HeliosVar.Var_19_fan_4_voltage.unit,
+            "fan4_voltage_abluft": HeliosVar.Var_19_fan_4_voltage.unit,
         }
         self._unit = var_units_map.get(key, unit)
         # Device classes and categories for better UI grouping
@@ -159,15 +157,3 @@ class HeliosNumberSensor(HeliosBaseEntity, SensorEntity):
     def native_value(self): return self._coord.data.get(self._key)
     @property
     def native_unit_of_measurement(self): return self._unit
-from homeassistant.components.binary_sensor import BinarySensorEntity, BinarySensorDeviceClass
-class HeliosBinarySensor(HeliosBaseEntity, BinarySensorEntity):
-    def __init__(self, coord, key, name, entry):
-        super().__init__(coord, key, name, entry)
-        # Mark "filter_warning" explicitly as a problem/diagnostic entity
-        if self._key == "filter_warning":
-            self._attr_device_class = BinarySensorDeviceClass.PROBLEM
-            self._attr_entity_category = EntityCategory.DIAGNOSTIC
-    @property
-    def is_on(self): 
-        v = self._coord.data.get(self._key)
-        return bool(v) if v is not None else False

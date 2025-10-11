@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.0.0 — 2025-10-11
+- Major release: UX/docs polish and cleanups
+	- Climate/Fan entity pictures standardized to the integration endpoint `/api/helios_pro_ventilation/image.png` (public; serves `config/www` image if present or falls back to packaged image/transparent PNG).
+	- README now includes ready-to-copy Lovelace YAML for Climate/Fan (Picture Entity, Tile) and action buttons.
+	- Duplicate binary sensor issue resolved; `filter_warning` remains as a diagnostic binary sensor and `auto_mode` is provided only via the binary_sensor platform.
+	- Date/time fix finalized: Var_07/Var_08 decoding, startup reads and 10‑minute cadence are in place and tested.
+	- Housekeeping: removed `TODO.md` (tracked via repository issues/notes).
+
 ## 3.2.1 — 2025-10-11
 - Fix: Device date/time sensors now decode correctly and are polled at startup, with a 10-minute refresh cadence so values remain available.
 - Tests: Added unit tests for generic parsing of Var_07 (date) and Var_08 (time).
