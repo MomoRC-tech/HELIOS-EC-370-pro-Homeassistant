@@ -56,18 +56,22 @@ Home Assistant will act as a TCP client connecting to this host:port.
 
 ## 5. Installation (Home Assistant)
 
-1. Copy the repository folder into Home Assistant’s custom components:
-	 `custom_components/helios_pro_ventilation`
-2. Restart Home Assistant.
-3. Add the integration via the UI. Alternatively, provide YAML (once) to import defaults:
+Manual install (short and complete)
+
+- Download the latest release archive from GitHub Releases (or clone this repository).
+- Copy the folder `helios_pro_ventilation` into your Home Assistant config’s custom integration folder `custom_components` so the final path is:
+  `config/custom_components/helios_pro_ventilation`
+- Restart Home Assistant.
+- Add the integration via Settings → Devices & Services → Add Integration → “Helios EC‑Pro”.
+- Optional: Provide YAML once to import default host/port values (the entry will then be managed via the UI). Place this in your Home Assistant `configuration.yaml`:
 
 ```yaml
 helios_pro_ventilation:
-	host: 192.168.0.51
-	port: 8234
+  host: 192.168.0.51
+  port: 8234
 ```
 
-The integration creates a config entry stored in the UI and starts background threads for IO and scheduling.
+The integration creates a config entry in the UI and starts background threads for IO and scheduling.
 
 ## 6. Features
 
@@ -130,13 +134,13 @@ Symptoms and checks
 - Debug scan: See `custom_components/helios_pro_ventilation` logs; summaries are written to files with timestamps.
 
 Logging
-Add to `configuration.yaml` to see more detail:
+Add this to your Home Assistant `configuration.yaml` to control log verbosity for the integration. Use `info` for normal diagnostics or `debug` for deep protocol traces:
 
 ```yaml
 logger:
-	default: warning
-	logs:
-		custom_components.helios_pro_ventilation: info
+  default: warning
+  logs:
+    custom_components.helios_pro_ventilation: info  # or "debug" for more detail
 ```
 
 ## 11. Known limitations and compatibility

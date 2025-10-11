@@ -13,13 +13,19 @@ Full documentation: see `helios_pro_ventilation/documentation.md`.
 - Debug: one‑shot scan over Helios variables with a single INFO summary + file exports
 
 ## Installation
-1. Copy this repository into Home Assistant's `custom_components/helios_pro_ventilation` directory.
-2. Restart Home Assistant, then add the integration via the UI (or keep your existing entry).
 
-Default connection: host `192.168.0.51`, port `8234`. You can change these in the integration config (YAML import or UI).
+Manual install (short and complete)
+
+- Download the latest release ZIP from GitHub (or clone this repository).
+- Copy the folder `helios_pro_ventilation` into your Home Assistant config's custom components folder so the final path is:
+	`config/custom_components/helios_pro_ventilation`
+- Restart Home Assistant.
+- In Home Assistant: Settings → Devices & Services → Add Integration → “Helios EC‑Pro”.
+
+Default connection: host `192.168.0.51`, port `8234`. You can change these during the UI setup, or by a one‑time YAML import.
 
 ## Configuration
-The integration supports import from YAML for initial setup:
+The integration supports import from YAML for initial setup. Put this in your Home Assistant `configuration.yaml` and restart once to import defaults:
 
 ```yaml
 helios_pro_ventilation:
@@ -65,13 +71,13 @@ The integration includes a switch to perform a one‑time scan of all known Heli
 	- The summary is also written to timestamped files: `<config>/helios_scan_summary_YYYYMMDD-HHMMSS.txt` and `.md`.
 - Special handling: Var_3A temperatures and fan level (0x35) are included in the summary even if the device doesn’t reply to direct reads (forwarded/synthesized from broadcast data).
 
-Tip: to see the debug lines in the UI, set the integration log level to info or debug:
+Tip: to see the debug lines in the UI, set the integration log level to `info` or `debug` in your Home Assistant `configuration.yaml`:
 
 ```yaml
 logger:
-	default: warning
-	logs:
-		custom_components.helios_pro_ventilation: info
+  default: warning
+  logs:
+    custom_components.helios_pro_ventilation: info  # or "debug" for more detail
 ```
 
 ## Services
