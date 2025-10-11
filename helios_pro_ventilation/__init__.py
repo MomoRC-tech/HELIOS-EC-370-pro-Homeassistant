@@ -13,7 +13,7 @@ from .coordinator import HeliosCoordinatorWithQueue
 from .broadcast_listener import HeliosBroadcastReader
 
 _LOGGER = logging.getLogger(__name__)
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.CLIMATE, Platform.SWITCH]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.CLIMATE, Platform.SWITCH, Platform.FAN, Platform.SELECT]
 
 # --- YAML support: import → create a config entry so devices/entities show in UI
 async def async_setup(hass: HomeAssistant, config: dict):
@@ -69,6 +69,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         import voluptuous as vol
         SERVICE_SET_AUTO_MODE_SCHEMA = vol.Schema({ vol.Optional("enabled", default=True): cv.boolean })
         SERVICE_SET_FAN_LEVEL_SCHEMA = vol.Schema({ vol.Required("level"): vol.All(vol.Coerce(int), vol.Range(min=0, max=4)) })
+        SERVICE_SET_PARTY_ENABLED_SCHEMA = vol.Schema({ vol.Optional("enabled", default=True): cv.boolean })
 
         async def handle_set_auto_mode(call):
             for d in hass.data.get(DOMAIN, {}).values():
@@ -79,10 +80,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             for d in hass.data.get(DOMAIN, {}).values():
                 d["coordinator"].set_fan_level(lvl)
 
+        async def handle_set_party_enabled(call):
+            enabled = bool(call.data.get("enabled", True))
+            for d in hass.data.get(DOMAIN, {}).values():
+                coord = d["coordinator"]
+                if hasattr(coord, "set_party_enabled"):
+                    coord.set_party_enabled(enabled)
+
         hass.services.async_register(DOMAIN, "set_auto_mode", handle_set_auto_mode, schema=SERVICE_SET_AUTO_MODE_SCHEMA)
         hass.services.async_register(DOMAIN, "set_fan_level", handle_set_fan_level, schema=SERVICE_SET_FAN_LEVEL_SCHEMA)
+        hass.services.async_register(DOMAIN, "set_party_enabled", handle_set_party_enabled, schema=SERVICE_SET_PARTY_ENABLED_SCHEMA)
 
-        # bind services.yaml so the Integration tile shows “2 services”
+        # bind services.yaml so the Integration tile shows service descriptions
         try:
             services_path = os.path.join(os.path.dirname(__file__), "services.yaml")
             desc = await hass.async_add_executor_job(load_yaml, services_path)
@@ -92,7 +101,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         except Exception:  # fine if it’s missing
             pass
 
-        _LOGGER.info("✅ Helios services ready: set_auto_mode, set_fan_level")
+        _LOGGER.info("✅ Helios services ready: set_auto_mode, set_fan_level, set_party_enabled")
 
     return True
 

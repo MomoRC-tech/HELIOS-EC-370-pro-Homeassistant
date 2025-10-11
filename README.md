@@ -27,8 +27,27 @@ It then creates a config entry in the UI for ongoing management.
 
 ## Entities
 - Climate (fan control)
-- Sensors: fan level, temp_outdoor, temp_extract, temp_exhaust, temp_supply
-- Binary sensor: filter warning
+- Fan (percentage control 0–100 mapped to levels 0–4; presets auto/manual)
+- Select: Lüfterstufe (Auswahl) — options [0..4] mapped to fan levels
+- Binary sensors:
+	- filter warning (diagnostic)
+	- Partymodus aktiv (derived from Var 0x10)
+	- Externer Kontakt (Var 0x14)
+- Sensors:
+	- fan_level (from broadcast; mirrors Var 0x35)
+	- Temperatures (Var 0x3A): temp_outdoor, temp_extract, temp_exhaust, temp_supply (°C)
+	- Party verbleibend (min) (Var 0x10)
+	- Party Zeit (Vorauswahl) (Var 0x11)
+	- Bypass Temperatur 1 (Var 0x1E), Bypass Temperatur 2 (Var 0x60)
+	- Frostschutz Temperatur (Var 0x1F)
+	- Betriebsstunden (Var 0x15)
+	- Minimale Lüfterstufe (Var 0x37)
+	- Filterwechsel (Monate) (Var 0x38; diagnostic)
+	- Party/Zuluft/Abluft Lüfterstufen (Var 0x42/0x45/0x46)
+	- Stufe 1–4 Spannungen Zuluft/Abluft (Var 0x16..0x19)
+	- Nachlaufzeit (Sekunden) (Var 0x49)
+	- Software Version (Var 0x48)
+	- Datum / Uhrzeit (Var 0x07 / 0x08)
 - Switch: Debug, one‑shot variable scan (stable id: `switch.helios_ec_pro_variablen_scan_debug`)
 
 ## Debug: One‑shot var scan

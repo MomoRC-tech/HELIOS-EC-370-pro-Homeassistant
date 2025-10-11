@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.1.0 — 2025-10-11
+- New entities and controls:
+	- Added a native Fan entity (percentage mapped to levels 0–4; presets auto/manual).
+	- Added a Select entity to directly choose Lüfterstufe [0..4].
+	- New sensors: party time (current/preselect), bypass temperatures 1/2, frostschutz temp, hours on, min fan level, filter change months (diagnostic), party/zuluft/abluft levels, fan stage voltages (1–4, Zuluft/Abluft), nachlaufzeit seconds, software version, device date/time.
+	- New binary sensors: Partymodus aktiv (derived from Var 0x10), Externer Kontakt.
+- Protocol/polling:
+	- Dynamic polling for party current time (10 min while active, hourly otherwise) and hourly polling for other slow-changing vars. Var_60 treated as °C.
+- Services:
+	- Added set_party_enabled service (write-only Var 0x0F) with optimistic UI + immediate Var_10 read.
+- Docs:
+	- README updated to list all new entities and the new Fan and Select controls.
+
 ## 3.0.0 — 2025-10-11
 - Major: Debug scan enhancements and documentation overhaul (tested and working)
 	- Single INFO summary after scan with units and HeliosVar notes; full, unshortened values.

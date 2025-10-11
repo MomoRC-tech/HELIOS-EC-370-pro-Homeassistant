@@ -14,6 +14,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 	entities = [
 		HeliosBinarySensor(coord, "auto_mode", "Automatikmodus aktiv", entry),
 		HeliosBinarySensor(coord, "filter_warning", "Filterwechsel erforderlich", entry),
+		HeliosBinarySensor(coord, "party_enabled", "Partymodus aktiv", entry),
+		HeliosBinarySensor(coord, "ext_contact", "Externer Kontakt", entry),
 	]
 	async_add_entities(entities)
 	for e in entities:

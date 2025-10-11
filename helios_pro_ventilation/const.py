@@ -49,7 +49,7 @@ class HeliosVar(IntEnum):
     # Modes and times
     Var_0D_back_up_heating  = (0x0D, 8, 1, None, False, 1.0, "rw", "8-bit (0=disabled, 1=enabled)")
     Var_0E_preheat_temp     = (0x0E, 16, 1, "°C", True, 0.1, "rw", "16-bit (request at offset 0x50)")
-    Var_0F_party_enabled    = (0x0F, 8, 1, None, False, 1.0, "wo", "8-bit (write-only: 0=disabled, 1=enabled)")
+    Var_0F_party_enabled    = (0x0F, 8, 1, None, False, 1.0, "wo", "8-bit (write-only: 0=disabled, 1=enabled); actual state reflected by Var_10 (>0 means active)")
     Var_10_party_curr_time  = (0x10, 16, 1, "min", False, 1.0, "rw", "16-bit (minutes, current selected)")
     Var_11_party_time       = (0x11, 16, 1, "min", False, 1.0, "rw", "16-bit (minutes, pre-selected)")
     Var_14_ext_contact      = (0x14, 8, 1, None, False, 1.0, "rw", "8-bit")
@@ -130,7 +130,7 @@ class HeliosVar(IntEnum):
     Var_5F_unknown          = (0x5F, 8, 1, None, False, 1.0, "rw", "8-bit 0x00")
 
     # Bypass/temp and mixed-width unknowns
-    Var_60_bypass2_temp     = (0x60, 8, 1, None, False, 1.0, "rw", "8-bit (Bypass temperature)")
+    Var_60_bypass2_temp     = (0x60, 8, 1, "°C", False, 1.0, "rw", "8-bit (°C, Bypass temperature)")
     Var_61_unknown          = (0x61, 24, 1, None, False, 1.0, "rw", "24-bit 0x1E 0x01 0x00")
     Var_62_unknown          = (0x62, 24, 1, None, False, 1.0, "rw", "24-bit 0x05 0x00 0x00")
     Var_63_unknown          = (0x63, 24, 1, None, False, 1.0, "rw", "24-bit 0x0F 0x01 0x00")

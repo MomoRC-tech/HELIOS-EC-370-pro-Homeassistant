@@ -96,6 +96,23 @@ class HeliosCoordinatorWithQueue(HeliosCoordinator):
         chk = _checksum(payload)
         return payload + bytes([chk])
 
+    def _build_write_var1(self, var: HeliosVar, value: int) -> bytes:
+        """Build generic write frame with 1 data byte (Var + 1 byte)."""
+        payload = bytes([
+            CLIENT_ID,
+            0x01,  # write
+            0x02,  # payload length (Var + 1 byte)
+            int(var),
+            value & 0xFF,
+        ])
+        chk = _checksum(payload)
+        return payload + bytes([chk])
+
+    def _build_read_request(self, var: HeliosVar) -> bytes:
+        """Build read frame for a single variable."""
+        frame = bytes([CLIENT_ID, 0x00, 0x01, int(var)])
+        return frame + bytes([_checksum(frame)])
+
     # ---------- SERVICE HANDLERS ----------
     def set_auto_mode(self, enabled: bool):
         """Enable or disable AUTO mode."""
@@ -117,3 +134,21 @@ class HeliosCoordinatorWithQueue(HeliosCoordinator):
             level,
             frame.hex(" "),
         )
+
+    def set_party_enabled(self, enabled: bool):
+        """Enable/disable Party mode via Var_0F (write-only). Optimistic update and confirm via Var_10 read."""
+        try:
+            frame = self._build_write_var1(HeliosVar.Var_0F_party_enabled, 0x01 if enabled else 0x00)
+            self.queue_frame(frame)
+            # Optimistic state update for immediate UI feedback
+            self.update_values({"party_enabled": bool(enabled)})
+            # Immediately request Var_10 (current time) to confirm state on next send slot
+            read_v10 = self._build_read_request(HeliosVar.Var_10_party_curr_time)
+            self.queue_frame(read_v10)
+            _LOGGER.info(
+                "HeliosPro: queued Party %s frame → %s",
+                "ON" if enabled else "OFF",
+                frame.hex(" "),
+            )
+        except Exception as exc:
+            _LOGGER.warning("HeliosPro: set_party_enabled failed: %s", exc)

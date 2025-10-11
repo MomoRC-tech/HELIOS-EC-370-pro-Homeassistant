@@ -78,12 +78,88 @@ class HeliosBroadcastReader(threading.Thread):
 
                     generic = try_parse_var_generic(self.buf)
                     if generic:
+                        # Forward to optional debug callback first
                         cb = getattr(self.coord, "debug_var_callback", None)
                         if callable(cb):
                             try:
                                 cb(generic)
                             except Exception as _exc:
                                 _LOGGER.debug("debug_var_callback failed: %s", _exc)
+                        # Map a subset of vars into coordinator data for entities
+                        try:
+                            var = generic.get("var")
+                            vals = generic.get("values") or []
+                            if var == HeliosVar.Var_10_party_curr_time and vals:
+                                # minutes remaining for current party and derived enabled flag
+                                minutes = int(vals[0])
+                                self.coord.update_values({
+                                    "party_curr_time_min": minutes,
+                                    "party_enabled": minutes > 0,
+                                })
+                            elif var == HeliosVar.Var_60_bypass2_temp and vals:
+                                # 8-bit °C, pass through as int
+                                self.coord.update_values({"bypass2_temp": int(vals[0])})
+                            elif var == HeliosVar.Var_11_party_time and vals:
+                                self.coord.update_values({"party_time_min_preselect": int(vals[0])})
+                            elif var == HeliosVar.Var_14_ext_contact and vals:
+                                self.coord.update_values({"ext_contact": int(vals[0]) != 0})
+                            elif var == HeliosVar.Var_15_hours_on and vals:
+                                self.coord.update_values({"hours_on": int(vals[0])})
+                            elif var == HeliosVar.Var_37_min_fan_level and vals:
+                                self.coord.update_values({"min_fan_level": int(vals[0])})
+                            elif var == HeliosVar.Var_38_change_filter and vals:
+                                self.coord.update_values({"change_filter_months": int(vals[0])})
+                            elif var == HeliosVar.Var_42_party_level and vals:
+                                self.coord.update_values({"party_level": int(vals[0])})
+                            elif var == HeliosVar.Var_45_zuluft_level and vals:
+                                self.coord.update_values({"zuluft_level": int(vals[0])})
+                            elif var == HeliosVar.Var_46_abluft_level and vals:
+                                self.coord.update_values({"abluft_level": int(vals[0])})
+                            elif var == HeliosVar.Var_1E_bypass1_temp and vals:
+                                # scaled by parser to 0.1°C already
+                                self.coord.update_values({"bypass1_temp": float(vals[0])})
+                            elif var == HeliosVar.Var_1F_frostschutz and vals:
+                                self.coord.update_values({"frostschutz_temp": float(vals[0])})
+                            elif var == HeliosVar.Var_48_software_version and vals:
+                                # Expect two bytes combined into a 16-bit number by parser; if parser keeps as 1 value, derive string
+                                try:
+                                    ver_num = int(vals[0])
+                                    major = ver_num // 100
+                                    minor = ver_num % 100
+                                    self.coord.update_values({"software_version": f"{major}.{minor:02d}"})
+                                except Exception:
+                                    # Fallback to string of values
+                                    self.coord.update_values({"software_version": ".".join(str(int(v)) for v in vals)})
+                            elif var == HeliosVar.Var_07_date_month_year and len(vals) >= 3:
+                                day, month, year = int(vals[0]), int(vals[1]), int(vals[2])
+                                self.coord.update_values({"date_str": f"{2000+year:04d}-{month:02d}-{day:02d}" if year < 100 else f"{year:04d}-{month:02d}-{day:02d}"})
+                            elif var == HeliosVar.Var_08_time_hour_min and len(vals) >= 2:
+                                hour, minute = int(vals[0]), int(vals[1])
+                                self.coord.update_values({"time_str": f"{hour:02d}:{minute:02d}"})
+                            elif var == HeliosVar.Var_49_nachlaufzeit and vals:
+                                self.coord.update_values({"nachlaufzeit_s": int(vals[0])})
+                            elif var == HeliosVar.Var_16_fan_1_voltage and len(vals) >= 2:
+                                self.coord.update_values({
+                                    "fan1_voltage_zuluft": float(vals[0]),
+                                    "fan1_voltage_abluft": float(vals[1]),
+                                })
+                            elif var == HeliosVar.Var_17_fan_2_voltage and len(vals) >= 2:
+                                self.coord.update_values({
+                                    "fan2_voltage_zuluft": float(vals[0]),
+                                    "fan2_voltage_abluft": float(vals[1]),
+                                })
+                            elif var == HeliosVar.Var_18_fan_3_voltage and len(vals) >= 2:
+                                self.coord.update_values({
+                                    "fan3_voltage_zuluft": float(vals[0]),
+                                    "fan3_voltage_abluft": float(vals[1]),
+                                })
+                            elif var == HeliosVar.Var_19_fan_4_voltage and len(vals) >= 2:
+                                self.coord.update_values({
+                                    "fan4_voltage_zuluft": float(vals[0]),
+                                    "fan4_voltage_abluft": float(vals[1]),
+                                })
+                        except Exception as map_exc:
+                            _LOGGER.debug("Generic var mapping failed: %s", map_exc)
                         made_progress = True
                         continue
 
@@ -125,11 +201,90 @@ class HeliosBroadcastReader(threading.Thread):
         return frame + bytes([chksum])
 
     def _cyclic_enqueuer(self):
+        last_v3a = 0.0
+        last_v10 = 0.0
+        last_v60 = 0.0
+        # Hourly-ish vars
+        last_hourly = 0.0
+        # One-time at startup vars
+        startup_done = False
         while not self.stop_event.is_set():
-            frame = self._build_read_request(HeliosVar.Var_3A_sensors_temp)
-            if hasattr(self.coord, 'queue_frame'):
-                self.coord.queue_frame(frame)
-            time.sleep(30)
+            now = time.time()
+            # Always poll Var_3A every ~30s for temperatures
+            if now - last_v3a >= 30.0:
+                frame = self._build_read_request(HeliosVar.Var_3A_sensors_temp)
+                if hasattr(self.coord, 'queue_frame'):
+                    self.coord.queue_frame(frame)
+                last_v3a = now
+
+            # Poll party current time (Var_10):
+            # - at startup (now - 0 >= interval triggers immediately)
+            # - every 10 min if party is currently enabled (derived from party_curr_time_min > 0)
+            # - otherwise hourly
+            party_minutes = 0
+            try:
+                v = self.coord.data.get("party_curr_time_min")
+                if isinstance(v, (int, float)):
+                    party_minutes = int(v)
+            except Exception:
+                party_minutes = 0
+            party_interval = 600.0 if party_minutes > 0 else 3600.0
+            if now - last_v10 >= party_interval:
+                frame = self._build_read_request(HeliosVar.Var_10_party_curr_time)
+                if hasattr(self.coord, 'queue_frame'):
+                    self.coord.queue_frame(frame)
+                last_v10 = now
+
+            # Poll bypass2 temperature (Var_60) hourly
+            if now - last_v60 >= 3600.0:
+                frame = self._build_read_request(HeliosVar.Var_60_bypass2_temp)
+                if hasattr(self.coord, 'queue_frame'):
+                    self.coord.queue_frame(frame)
+                last_v60 = now
+
+            # Queue one-time reads at startup for mostly-static values
+            if not startup_done:
+                for var in (
+                    HeliosVar.Var_48_software_version,
+                    HeliosVar.Var_37_min_fan_level,
+                    HeliosVar.Var_38_change_filter,
+                    HeliosVar.Var_49_nachlaufzeit,
+                ):
+                    frame = self._build_read_request(var)
+                    if hasattr(self.coord, 'queue_frame'):
+                        self.coord.queue_frame(frame)
+                    time.sleep(0.05)
+                startup_done = True
+
+            # Hourly polling for slowly changing vars
+            if now - last_hourly >= 3600.0:
+                for var in (
+                    HeliosVar.Var_14_ext_contact,
+                    HeliosVar.Var_15_hours_on,
+                    HeliosVar.Var_11_party_time,
+                    HeliosVar.Var_42_party_level,
+                    HeliosVar.Var_45_zuluft_level,
+                    HeliosVar.Var_46_abluft_level,
+                    HeliosVar.Var_1E_bypass1_temp,
+                    HeliosVar.Var_1F_frostschutz,
+                    HeliosVar.Var_07_date_month_year,
+                    HeliosVar.Var_08_time_hour_min,
+                    HeliosVar.Var_16_fan_1_voltage,
+                    HeliosVar.Var_17_fan_2_voltage,
+                    HeliosVar.Var_18_fan_3_voltage,
+                    HeliosVar.Var_19_fan_4_voltage,
+                ):
+                    frame = self._build_read_request(var)
+                    if hasattr(self.coord, 'queue_frame'):
+                        self.coord.queue_frame(frame)
+                    time.sleep(0.05)
+                last_hourly = now
+
+            # Pace the loop fairly fine but light
+            for _ in range(10):
+                if self.stop_event.is_set():
+                    break
+                time.sleep(0.5)
 
     def _sender_loop(self):
         while not self.stop_event.is_set():

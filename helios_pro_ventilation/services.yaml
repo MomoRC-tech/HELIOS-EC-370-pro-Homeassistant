@@ -26,3 +26,15 @@ set_auto_mode:
       default: true
       selector:
         boolean:
+
+set_party_enabled:
+  name: Set party mode
+  description: Enable or disable party mode (write-only 0x0F; state derived from 0x10).
+  fields:
+    enabled:
+      name: Enabled
+      description: True = Party ON, False = Party OFF. Actual state is reflected by Var 0x10 (>0 means active).
+      required: false
+      default: true
+      selector:
+        boolean:
