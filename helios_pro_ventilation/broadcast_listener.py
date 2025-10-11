@@ -56,6 +56,23 @@ class HeliosBroadcastReader(threading.Thread):
                     parsed = try_parse_var3a(self.buf)
                     if parsed:
                         self.coord.update_values(parsed)
+                        # Forward a compact 0x3A result to the debug callback for scanner summaries
+                        cb = getattr(self.coord, "debug_var_callback", None)
+                        if callable(cb):
+                            try:
+                                vals = [
+                                    parsed.get("temp_outdoor"),
+                                    parsed.get("temp_extract"),
+                                    parsed.get("temp_exhaust"),
+                                    parsed.get("temp_supply"),
+                                ]
+                                cb({
+                                    "var": HeliosVar.Var_3A_sensors_temp,
+                                    "values": vals,
+                                    "_frame_ts": parsed.get("_frame_ts"),
+                                })
+                            except Exception as _exc:
+                                _LOGGER.debug("debug_var_callback (3A) failed: %s", _exc)
                         made_progress = True
                         continue
 

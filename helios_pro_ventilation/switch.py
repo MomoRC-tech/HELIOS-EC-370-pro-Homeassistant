@@ -46,7 +46,8 @@ class HeliosDebugScanSwitch(SwitchEntity):
         self._coord = coordinator
         self._entry_id = entry_id
         self._is_on = False
-        self._scanner = HeliosDebugScanner(self._coord, on_complete=self._on_scan_complete)
+        self._output_path: str | None = None
+        self._scanner = HeliosDebugScanner(self._coord, on_complete=self._on_scan_complete, output_path=self._output_path)
         # Requested stable entity id and name
         try:
             self.entity_id = "switch.helios_ec_pro_variablen_scan_debug"
@@ -87,6 +88,12 @@ class HeliosDebugScanSwitch(SwitchEntity):
         if self._scanner.is_active:
             _LOGGER.info("HeliosDebug: scan already running; ignoring turn_on")
             return
+        # Optional: allow passing a 'path' kwarg to write the summary to
+        path = kwargs.get("path") if isinstance(kwargs, dict) else None
+        if isinstance(path, str) and path:
+            self._output_path = path
+            # Recreate scanner with the new output path
+            self._scanner = HeliosDebugScanner(self._coord, on_complete=self._on_scan_complete, output_path=self._output_path)
         self._is_on = True
         self.async_write_ha_state()
 
