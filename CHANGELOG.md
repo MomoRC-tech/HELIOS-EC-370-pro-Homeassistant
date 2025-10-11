@@ -13,6 +13,9 @@
 - Docs:
 	- README updated to list all new entities and the new Fan and Select controls.
 
+## 3.1.1 — 2025-10-11
+- Documentation: Added full project documentation (documentation.md) and linked it from README. Noted verified hardware (Helios EC 370 pro ~2012, Waveshare RS485↔Ethernet via RJ12 “Bedienteile”).
+
 ## 3.0.0 — 2025-10-11
 - Major: Debug scan enhancements and documentation overhaul (tested and working)
 	- Single INFO summary after scan with units and HeliosVar notes; full, unshortened values.
