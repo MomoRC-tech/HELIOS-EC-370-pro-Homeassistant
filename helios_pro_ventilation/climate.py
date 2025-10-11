@@ -49,8 +49,9 @@ class HeliosClimate(ClimateEntity):
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}-climate"
         self._attr_name = "Helios Lüftung"
-        self._entity_picture_url = "/local/helios_ec_pro.png"
-        self._entity_picture_exists: Optional[bool] = None
+        # Use API endpoint which serves either config/www image or packaged one
+        self._entity_picture_url = "/api/helios_pro_ventilation/image.png"
+        self._entity_picture_exists = None  # type: Optional[bool]
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
             name="Helios EC-Pro",
@@ -80,15 +81,26 @@ class HeliosClimate(ClimateEntity):
 
     @property
     def entity_picture(self) -> Optional[str]:
-        # Serve an optional device image if user placed it in config/www/helios_ec_pro.png
+        # Serve an optional device image via integration API (falls back to /local if needed)
         try:
             if self._entity_picture_exists is False:
                 return None
             if self.hass is None:
                 return None
+            # Existence check: true if either www/helios_ec_pro.png or packaged image exists
             if self._entity_picture_exists is None:
-                fs_path = self.hass.config.path("www/helios_ec_pro.png")
-                self._entity_picture_exists = os.path.exists(fs_path)
+                exists = False
+                try:
+                    fs_path = self.hass.config.path("www/helios_ec_pro.png")
+                    exists = exists or os.path.exists(fs_path)
+                except Exception:
+                    pass
+                try:
+                    pkg_path = os.path.join(os.path.dirname(__file__), "helios_ec_pro.png")
+                    exists = exists or os.path.exists(pkg_path)
+                except Exception:
+                    pass
+                self._entity_picture_exists = exists
             return self._entity_picture_url if self._entity_picture_exists else None
         except Exception:
             return None

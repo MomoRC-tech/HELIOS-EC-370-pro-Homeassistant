@@ -1,12 +1,13 @@
 # __init__.py (essentials)
-import logging, threading, voluptuous as vol
+import logging, threading, voluptuous as vol, os, json, base64
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry, SOURCE_IMPORT
 from homeassistant.const import Platform
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.service import async_set_service_schema
 from homeassistant.util.yaml import load_yaml
-import os, json
+from homeassistant.components.http import HomeAssistantView
+from aiohttp import web
 
 from .const import DOMAIN, DEFAULT_HOST, DEFAULT_PORT
 from .coordinator import HeliosCoordinatorWithQueue
@@ -63,6 +64,43 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         pass
     ver_str = f"v{version}" if version else "(version unknown)"
     _LOGGER.info("✅ Helios EC-Pro %s initialized for %s:%d (entry=%s)", ver_str, host, port, entry.entry_id)
+
+    # ----- HTTP view to serve an optional device image -----
+    try:
+        # Register once per HA instance
+        key = "_image_view_registered"
+        hass.data.setdefault(DOMAIN, {})
+        if not hass.data[DOMAIN].get(key):
+            class HeliosImageView(HomeAssistantView):
+                url = "/api/helios_pro_ventilation/image.png"
+                name = "api:helios_pro_ventilation:image"
+                requires_auth = True
+
+                async def get(self, request):  # type: ignore[override]
+                    hass_local: HomeAssistant = request.app["hass"]  # type: ignore
+                    # Try config/www first, then packaged image in the integration folder, else return a 1x1 transparent PNG
+                    try:
+                        path_www = hass_local.config.path("www/helios_ec_pro.png")
+                        if os.path.exists(path_www):
+                            with open(path_www, "rb") as f:
+                                data = f.read()
+                            return web.Response(body=data, content_type="image/png")
+                        path_pkg = os.path.join(os.path.dirname(__file__), "helios_ec_pro.png")
+                        if os.path.exists(path_pkg):
+                            with open(path_pkg, "rb") as f:
+                                data = f.read()
+                            return web.Response(body=data, content_type="image/png")
+                    except Exception:
+                        pass
+                    # 1x1 transparent PNG fallback
+                    pixel_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="
+                    data = base64.b64decode(pixel_b64)
+                    return web.Response(body=data, content_type="image/png")
+
+            hass.http.register_view(HeliosImageView())
+            hass.data[DOMAIN][key] = True
+    except Exception as exc:
+        _LOGGER.debug("Image HTTP view registration skipped: %s", exc)
 
     # ----- Services (register once) -----
     if not hass.services.has_service(DOMAIN, "set_fan_level"):
