@@ -74,8 +74,24 @@ class HeliosFan(FanEntity):
             if self.hass is None:
                 return None
             if self._entity_picture_exists is None:
-                fs_path = self.hass.config.path("www/helios_ec_pro.png")
-                self._entity_picture_exists = os.path.exists(fs_path)
+                exists = False
+                try:
+                    for fn in ("MomoRC_HELIOS_HASS.png", "helios_ec_pro.png"):
+                        fs_path = self.hass.config.path(f"www/{fn}")
+                        if os.path.exists(fs_path):
+                            exists = True
+                            break
+                except Exception:
+                    pass
+                try:
+                    for fn in ("MomoRC_HELIOS_HASS.png", "helios_ec_pro.png"):
+                        pkg_path = os.path.join(os.path.dirname(__file__), fn)
+                        if os.path.exists(pkg_path):
+                            exists = True
+                            break
+                except Exception:
+                    pass
+                self._entity_picture_exists = exists
             return self._entity_picture_url if self._entity_picture_exists else None
         except Exception:
             return None

@@ -102,7 +102,7 @@ Services
 - `helios_pro_ventilation.set_party_enabled` — enabled: boolean (write Var 0x0F; state confirmed via Var 0x10)
 
 Entity picture (optional)
-- Place `helios_ec_pro.png` either in your HA config at `www/helios_ec_pro.png` (served as `/local/helios_ec_pro.png`) or in the integration folder at `custom_components/helios_pro_ventilation/helios_ec_pro.png` (served as `/api/helios_pro_ventilation/image.png`). The Climate and Fan entities will detect and display it automatically.
+- Place `MomoRC_HELIOS_HASS.png` (or `helios_ec_pro.png`) either in your HA config at `www/` (served as `/local/...`) or in the integration folder at `custom_components/helios_pro_ventilation/` (served as `/api/helios_pro_ventilation/image.png`). The Climate and Fan entities will detect and display it automatically.
 
 ## 8. Operation details
 

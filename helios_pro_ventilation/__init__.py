@@ -80,16 +80,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                     hass_local: HomeAssistant = request.app["hass"]  # type: ignore
                     # Try config/www first, then packaged image in the integration folder, else return a 1x1 transparent PNG
                     try:
-                        path_www = hass_local.config.path("www/helios_ec_pro.png")
-                        if os.path.exists(path_www):
-                            with open(path_www, "rb") as f:
-                                data = f.read()
-                            return web.Response(body=data, content_type="image/png")
-                        path_pkg = os.path.join(os.path.dirname(__file__), "helios_ec_pro.png")
-                        if os.path.exists(path_pkg):
-                            with open(path_pkg, "rb") as f:
-                                data = f.read()
-                            return web.Response(body=data, content_type="image/png")
+                        candidates = [
+                            hass_local.config.path("www/MomoRC_HELIOS_HASS.png"),
+                            hass_local.config.path("www/helios_ec_pro.png"),
+                            os.path.join(os.path.dirname(__file__), "MomoRC_HELIOS_HASS.png"),
+                            os.path.join(os.path.dirname(__file__), "helios_ec_pro.png"),
+                        ]
+                        for path in candidates:
+                            if os.path.exists(path):
+                                with open(path, "rb") as f:
+                                    data = f.read()
+                                return web.Response(body=data, content_type="image/png")
                     except Exception:
                         pass
                     # 1x1 transparent PNG fallback

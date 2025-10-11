@@ -128,7 +128,20 @@ class HeliosNumberSensor(HeliosBaseEntity, SensorEntity):
         except Exception:
             pass
         # Mark some sensors as diagnostics
-        diag_keys = {"change_filter_months", "hours_on", "min_fan_level", "nachlaufzeit_s", "party_time_min_preselect"}
+        diag_keys = {
+            "change_filter_months",
+            "hours_on",
+            "min_fan_level",
+            "nachlaufzeit_s",
+            "party_time_min_preselect",
+            # User-requested: move these to diagnostic
+            "party_level",
+            "zuluft_level",
+            "abluft_level",
+            "bypass1_temp",
+            "bypass2_temp",
+            "frostschutz_temp",
+        }
         if key in diag_keys:
             try:
                 from homeassistant.helpers.entity import EntityCategory

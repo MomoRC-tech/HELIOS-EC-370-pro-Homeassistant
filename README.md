@@ -102,9 +102,9 @@ MIT — see LICENSE
 See CHANGELOG.md
 
 ## Optional: Device image on cards
-If you want the Climate and Fan entities to show a device picture on cards/dashboards, you have two options:
-- Place an image file named `helios_ec_pro.png` into your Home Assistant config folder under `www/` (so the path is `config/www/helios_ec_pro.png`). The entities will automatically use `/local/helios_ec_pro.png` if the file exists.
-- Or place `helios_ec_pro.png` in the integration folder at `custom_components/helios_pro_ventilation/helios_ec_pro.png`. The integration will serve it via `/api/helios_pro_ventilation/image.png` and entities will use it automatically.
+If you want the Climate and Fan entities to show a device picture on cards/dashboards, you have two options (both filenames are supported: `MomoRC_HELIOS_HASS.png` or `helios_ec_pro.png`):
+- Place the image into your Home Assistant config folder under `www/` (e.g., `config/www/MomoRC_HELIOS_HASS.png`). The entities will automatically use it from `/local/...`.
+- Or place the image in the integration folder at `custom_components/helios_pro_ventilation/MomoRC_HELIOS_HASS.png`. The integration will serve it via `/api/helios_pro_ventilation/image.png` and entities will use it automatically.
 Note: After adding the file, reload the integration or restart Home Assistant; you may also need to refresh the browser cache.
 
 ## Roadmap / TODO

@@ -87,17 +87,23 @@ class HeliosClimate(ClimateEntity):
                 return None
             if self.hass is None:
                 return None
-            # Existence check: true if either www/helios_ec_pro.png or packaged image exists
+            # Existence check: true if either www image or packaged image exists
             if self._entity_picture_exists is None:
                 exists = False
                 try:
-                    fs_path = self.hass.config.path("www/helios_ec_pro.png")
-                    exists = exists or os.path.exists(fs_path)
+                    for fn in ("MomoRC_HELIOS_HASS.png", "helios_ec_pro.png"):
+                        fs_path = self.hass.config.path(f"www/{fn}")
+                        if os.path.exists(fs_path):
+                            exists = True
+                            break
                 except Exception:
                     pass
                 try:
-                    pkg_path = os.path.join(os.path.dirname(__file__), "helios_ec_pro.png")
-                    exists = exists or os.path.exists(pkg_path)
+                    for fn in ("MomoRC_HELIOS_HASS.png", "helios_ec_pro.png"):
+                        pkg_path = os.path.join(os.path.dirname(__file__), fn)
+                        if os.path.exists(pkg_path):
+                            exists = True
+                            break
                 except Exception:
                     pass
                 self._entity_picture_exists = exists
