@@ -1,0 +1,13 @@
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Test caches
+.pytest_cache/
+
+# IDE/editor
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
