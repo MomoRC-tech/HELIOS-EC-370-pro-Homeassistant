@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.2.0 — 2025-10-11
+- UI: Optional device image on cards — Climate/Fan now show an image if `helios_ec_pro.png` is present either in `config/www` or packaged in the integration folder. Integration exposes `/api/helios_pro_ventilation/image.png` and falls back to a tiny transparent PNG if none found.
+- UX: Improved default entity organization for better "Add to dashboard" suggestions — primary controls/sensors are prominent; diagnostic/noisy entities are categorized and many disabled by default.
+- Docs: README and full docs updated with image placement instructions and entity tips.
+
 ## 3.1.2 — 2025-10-11
 - Docs: Clarified that host/port YAML belongs in Home Assistant `configuration.yaml` for a one-time import; UI manages the entry afterward.
 - Docs: Expanded logging instructions with `configuration.yaml` placement and `info` vs `debug` examples.
