@@ -14,6 +14,7 @@ try:  # pragma: no cover - best-effort import when HA is installed
     SwitchEntity = getattr(ha_switch, "SwitchEntity")  # type: ignore
     ha_entity = importlib.import_module("homeassistant.helpers.entity")
     DeviceInfo = getattr(ha_entity, "DeviceInfo")  # type: ignore
+    EntityCategory = getattr(ha_entity, "EntityCategory")  # type: ignore
 except Exception:  # pragma: no cover - fallback for local editors/tests
     HomeAssistant = Any  # type: ignore
     ConfigEntry = Any  # type: ignore
@@ -24,6 +25,8 @@ except Exception:  # pragma: no cover - fallback for local editors/tests
     class DeviceInfo:  # type: ignore
         def __init__(self, **kwargs):
             pass
+    class EntityCategory:  # type: ignore
+        DIAGNOSTIC = "diagnostic"
 
 from .const import DOMAIN
 from .debug_scanner import HeliosDebugScanner
@@ -63,6 +66,9 @@ class HeliosDebugScanSwitch(SwitchEntity):
                 manufacturer="Helios",
                 model="EC-Pro",
             )
+            # Diagnostic entity, hidden by default
+            self._attr_entity_category = EntityCategory.DIAGNOSTIC
+            self._attr_entity_registry_enabled_default = False
         except Exception:
             pass
 

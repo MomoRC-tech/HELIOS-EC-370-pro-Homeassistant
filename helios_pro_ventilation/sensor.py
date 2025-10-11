@@ -1,7 +1,7 @@
 # sensor.py
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from .const import DOMAIN, HeliosVar
 from .coordinator import HeliosCoordinator
@@ -29,6 +29,15 @@ class HeliosTextSensor(HeliosBaseEntity, SensorEntity):
     def __init__(self, coord, key, name, entry):
         super().__init__(coord, key, name, entry)
         self._unit = None
+        # Mark text sensors as diagnostic; keep SW version enabled, hide date/time by default
+        try:
+            if key in {"software_version", "date_str", "time_str"}:
+                from homeassistant.helpers.entity import EntityCategory  # lazy import
+                self._attr_entity_category = EntityCategory.DIAGNOSTIC
+                if key in {"date_str", "time_str"}:
+                    self._attr_entity_registry_enabled_default = False
+        except Exception:
+            pass
     @property
     def native_value(self): return self._coord.data.get(self._key)
     @property
@@ -106,13 +115,32 @@ class HeliosNumberSensor(HeliosBaseEntity, SensorEntity):
                 "fan4_voltage_abluft": HeliosVar.Var_19_fan_4_voltage.unit,
         }
         self._unit = var_units_map.get(key, unit)
+        # Device classes and categories for better UI grouping
+        try:
+            if key in {"temp_outdoor", "temp_extract", "temp_exhaust", "temp_supply", "bypass1_temp", "bypass2_temp"}:
+                self._attr_device_class = SensorDeviceClass.TEMPERATURE
+            if "voltage" in key:
+                self._attr_device_class = SensorDeviceClass.VOLTAGE
+                # Voltage stage sensors are diagnostic noise; hide by default
+                from homeassistant.helpers.entity import EntityCategory  # lazy import
+                self._attr_entity_category = EntityCategory.DIAGNOSTIC
+                self._attr_entity_registry_enabled_default = False
+        except Exception:
+            pass
         # Mark some sensors as diagnostics
-        if key == "change_filter_months":
+        diag_keys = {"change_filter_months", "hours_on", "min_fan_level", "nachlaufzeit_s", "party_time_min_preselect"}
+        if key in diag_keys:
             try:
                 from homeassistant.helpers.entity import EntityCategory
                 self._attr_entity_category = EntityCategory.DIAGNOSTIC
             except Exception:
                 # best-effort outside HA runtime
+                pass
+        # Hide some less prominent numbers by default to declutter dashboards
+        if key in {"party_time_min_preselect", "party_level", "zuluft_level", "abluft_level", "nachlaufzeit_s"}:
+            try:
+                self._attr_entity_registry_enabled_default = False
+            except Exception:
                 pass
     @property
     def native_value(self): return self._coord.data.get(self._key)

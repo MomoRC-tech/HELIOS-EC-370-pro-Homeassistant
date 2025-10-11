@@ -100,3 +100,6 @@ MIT — see LICENSE
 
 ## Changelog
 See CHANGELOG.md
+
+## Roadmap / TODO
+See TODO.md for planned fixes and improvements.

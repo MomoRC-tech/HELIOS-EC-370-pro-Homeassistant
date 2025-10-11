@@ -50,6 +50,13 @@ class HeliosBinarySensor(HeliosBaseEntity, BinarySensorEntity):
 		if self._key == "filter_warning":
 			self._attr_device_class = BinarySensorDeviceClass.PROBLEM
 			self._attr_entity_category = EntityCategory.DIAGNOSTIC
+		# Hide ext_contact by default; it's an auxiliary input
+		if self._key == "ext_contact":
+			try:
+				self._attr_entity_category = EntityCategory.DIAGNOSTIC
+				self._attr_entity_registry_enabled_default = False
+			except Exception:
+				pass
 
 	@property
 	def is_on(self):
