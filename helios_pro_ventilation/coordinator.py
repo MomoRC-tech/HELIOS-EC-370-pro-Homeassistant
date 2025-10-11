@@ -18,6 +18,8 @@ class HeliosCoordinator:
         self.send_slot_active: bool = False
         self.send_slot_expires: float = 0.0
         self.send_slot_event = threading.Event()
+        # Optional callback used by the debug scanner to receive parsed var responses
+        self.debug_var_callback = None  # type: ignore[assignment]
 
     def register_entity(self, entity):
         self.entities.append(entity)

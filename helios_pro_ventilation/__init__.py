@@ -13,7 +13,7 @@ from .coordinator import HeliosCoordinatorWithQueue
 from .broadcast_listener import HeliosBroadcastReader
 
 _LOGGER = logging.getLogger(__name__)
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.CLIMATE]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.CLIMATE, Platform.SWITCH]
 
 # --- YAML support: import → create a config entry so devices/entities show in UI
 async def async_setup(hass: HomeAssistant, config: dict):

@@ -119,3 +119,31 @@ def try_parse_ping(buf: bytearray) -> bool:
         del buf[:4]
         return True
     return False
+
+
+def try_parse_var_generic(buf: bytearray) -> Optional[Dict[str, Any]]:
+    """Try to parse a generic var response [addr, cmd, plen, var_idx, data..., chk].
+
+    Uses HeliosVar metadata to decode the payload. Returns a dict with keys:
+    {"var": HeliosVar, "values": list, "_frame_ts": float}
+    """
+    if len(buf) < 5:
+        return None
+    addr, cmd, plen = buf[0], buf[1], buf[2]
+    total = 3 + plen + 1
+    if len(buf) < total:
+        return None
+    frame = bytes(buf[:total])
+    var_idx = frame[3]
+    try:
+        var = HeliosVar(var_idx)
+    except Exception:
+        return None
+    calc = _checksum(frame[:-1])
+    if frame[-1] != calc:
+        buf.pop(0)
+        return None
+    del buf[:total]
+    payload = frame[4:-1]
+    values = _decode_sequence(payload, var)
+    return {"var": var, "values": values, "_frame_ts": time.time()}

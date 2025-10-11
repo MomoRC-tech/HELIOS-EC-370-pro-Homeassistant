@@ -1,5 +1,5 @@
 import socket, threading, logging, time
-from .parser import try_parse_broadcast, try_parse_var3a, try_parse_ping, _checksum
+from .parser import try_parse_broadcast, try_parse_var3a, try_parse_ping, try_parse_var_generic, _checksum
 from .const import CLIENT_ID, HeliosVar
 
 _LOGGER = logging.getLogger(__name__)
@@ -59,6 +59,17 @@ class HeliosBroadcastReader(threading.Thread):
                         made_progress = True
                         continue
 
+                    generic = try_parse_var_generic(self.buf)
+                    if generic:
+                        cb = getattr(self.coord, "debug_var_callback", None)
+                        if callable(cb):
+                            try:
+                                cb(generic)
+                            except Exception as _exc:
+                                _LOGGER.debug("debug_var_callback failed: %s", _exc)
+                        made_progress = True
+                        continue
+
                     if len(self.buf) > 2048:
                         self.buf.clear()
 
@@ -91,13 +102,14 @@ class HeliosBroadcastReader(threading.Thread):
         _LOGGER.info("HeliosBroadcastReader stopped.")
 
     def _build_read_request(self, var: int) -> bytes:
-        frame = bytes([CLIENT_ID, 0x00, 0x01, var])
+        var_code = int(var)
+        frame = bytes([CLIENT_ID, 0x00, 0x01, var_code])
         chksum = _checksum(frame)
         return frame + bytes([chksum])
 
     def _cyclic_enqueuer(self):
         while not self.stop_event.is_set():
-            frame = self._build_read_request(HeliosVar.Var_3A_sensors_temp.index)
+            frame = self._build_read_request(HeliosVar.Var_3A_sensors_temp)
             if hasattr(self.coord, 'queue_frame'):
                 self.coord.queue_frame(frame)
             time.sleep(30)
@@ -116,7 +128,7 @@ class HeliosBroadcastReader(threading.Thread):
                 try:
                     self.sock.sendall(frame)
                     var_idx = frame[3] if len(frame) >= 5 else None
-                    if var_idx == HeliosVar.Var_3A_sensors_temp.index:
+                    if var_idx == HeliosVar.Var_3A_sensors_temp:
                         _LOGGER.debug("Sent Var_3A sensor read request: %s", frame.hex(' '))
                     else:
                         _LOGGER.debug("Sent frame: %s", frame.hex(' '))
