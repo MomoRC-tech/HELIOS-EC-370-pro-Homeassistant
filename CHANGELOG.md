@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.1.2 — 2025-10-11
+- Docs: Clarified that host/port YAML belongs in Home Assistant `configuration.yaml` for a one-time import; UI manages the entry afterward.
+- Docs: Expanded logging instructions with `configuration.yaml` placement and `info` vs `debug` examples.
+
 ## 3.1.0 — 2025-10-11
 - New entities and controls:
 	- Added a native Fan entity (percentage mapped to levels 0–4; presets auto/manual).
