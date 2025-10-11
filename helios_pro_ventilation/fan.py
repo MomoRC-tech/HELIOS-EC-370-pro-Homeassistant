@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Optional
+import os
 
 # Dynamic import pattern to avoid editor errors outside HA runtime
 try:  # pragma: no cover
@@ -50,6 +51,8 @@ class HeliosFan(FanEntity):
         self._coord = coord
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}-fan"
+        self._entity_picture_url = "/local/helios_ec_pro.png"
+        self._entity_picture_exists: Optional[bool] = None
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
             name="Helios EC-Pro",
@@ -61,6 +64,21 @@ class HeliosFan(FanEntity):
                 coord.register_entity(self)
         except Exception:
             pass
+
+    @property
+    def entity_picture(self) -> Optional[str]:
+        # Optional: show /local/helios_ec_pro.png if user placed it in config/www
+        try:
+            if self._entity_picture_exists is False:
+                return None
+            if self.hass is None:
+                return None
+            if self._entity_picture_exists is None:
+                fs_path = self.hass.config.path("www/helios_ec_pro.png")
+                self._entity_picture_exists = os.path.exists(fs_path)
+            return self._entity_picture_url if self._entity_picture_exists else None
+        except Exception:
+            return None
 
     # ---------- State ----------
     @property

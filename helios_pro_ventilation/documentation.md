@@ -101,6 +101,9 @@ Services
 - `helios_pro_ventilation.set_fan_level` — level: 0..4
 - `helios_pro_ventilation.set_party_enabled` — enabled: boolean (write Var 0x0F; state confirmed via Var 0x10)
 
+Entity picture (optional)
+- If you place an image `helios_ec_pro.png` under your HA config at `www/helios_ec_pro.png`, the Climate and Fan entities will automatically display it via `/local/helios_ec_pro.png` on cards.
+
 ## 8. Operation details
 
 Send slots and bus pings
