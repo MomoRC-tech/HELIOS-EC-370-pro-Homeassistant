@@ -11,7 +11,8 @@ class HeliosBaseEntity:
     def __init__(self, coord: HeliosCoordinator, key: str, name: str, entry: ConfigEntry):
         self._coord = coord
         self._key = key
-        self._attr_name = name
+        # Use translations instead of hardcoded names
+        self._attr_translation_key = key
         self._attr_unique_id = f"{entry.entry_id}_{key}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},

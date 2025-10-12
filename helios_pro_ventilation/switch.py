@@ -44,6 +44,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 class HeliosDebugScanSwitch(SwitchEntity):
     _attr_has_entity_name = True
+    _attr_translation_key = "variablen_scan_debug"
 
     def __init__(self, coordinator, entry_id: str) -> None:
         self._coord = coordinator
@@ -78,9 +79,9 @@ class HeliosDebugScanSwitch(SwitchEntity):
         return "helios_ec_pro_variablen_scan_debug"
 
     @property
-    def name(self) -> str:
-        # Requested friendly name
-        return "variablen Scan (debug)"
+    def name(self) -> str | None:
+        # Use translation or default registry name
+        return None
 
     @property
     def icon(self) -> str | None:

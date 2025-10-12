@@ -32,7 +32,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
 class HeliosFanLevelSelect(SelectEntity):
     _attr_should_poll = False
-    _attr_name = "Lüfterstufe (Auswahl)"
+    _attr_translation_key = "fan_level_select"
     _attr_options = FAN_LEVEL_OPTIONS
 
     def __init__(self, coord: Any, entry: ConfigEntry) -> None:

@@ -48,7 +48,8 @@ class HeliosClimate(ClimateEntity):
         self._coord = coord
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}-climate"
-        self._attr_name = "Helios Lüftung"
+        # Localized via translations
+        self._attr_translation_key = "helios_climate"
         # Use API endpoint which serves either config/www image or packaged one
         self._entity_picture_url = "/api/helios_pro_ventilation/image.png"
         self._entity_picture_exists = None  # type: Optional[bool]

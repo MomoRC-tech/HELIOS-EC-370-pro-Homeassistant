@@ -1,0 +1,52 @@
+{
+  "title": "Helios EC-Pro Ventilation",
+  "entity": {
+    "climate": { "helios_climate": { "name": "Helios Ventilation" } },
+    "fan": { "helios_fan": { "name": "Helios Fan" } },
+    "select": { "fan_level_select": { "name": "Fan level (Select)" } },
+    "sensor": {
+      "fan_level": { "name": "Fan level" },
+      "temp_outdoor": { "name": "Outdoor temperature" },
+      "temp_extract": { "name": "Extract temperature" },
+      "temp_exhaust": { "name": "Exhaust temperature" },
+      "temp_supply": { "name": "Supply temperature" },
+      "party_curr_time_min": { "name": "Party remaining (min)" },
+      "party_time_min_preselect": { "name": "Party time (preset)" },
+      "hours_on": { "name": "Operating hours" },
+      "min_fan_level": { "name": "Minimum fan level" },
+      "change_filter_months": { "name": "Filter change (months)" },
+      "party_level": { "name": "Party fan level" },
+      "zuluft_level": { "name": "Supply fan level" },
+      "abluft_level": { "name": "Extract fan level" },
+      "bypass1_temp": { "name": "Bypass temperature 1" },
+      "bypass2_temp": { "name": "Bypass temperature 2" },
+      "frostschutz_temp": { "name": "Frost protection temperature" },
+      "nachlaufzeit_s": { "name": "Run-on time (s)" },
+      "fan1_voltage_zuluft": { "name": "Stage 1 voltage (Supply)" },
+      "fan1_voltage_abluft": { "name": "Stage 1 voltage (Extract)" },
+      "fan2_voltage_zuluft": { "name": "Stage 2 voltage (Supply)" },
+      "fan2_voltage_abluft": { "name": "Stage 2 voltage (Extract)" },
+      "fan3_voltage_zuluft": { "name": "Stage 3 voltage (Supply)" },
+      "fan3_voltage_abluft": { "name": "Stage 3 voltage (Extract)" },
+      "fan4_voltage_zuluft": { "name": "Stage 4 voltage (Supply)" },
+      "fan4_voltage_abluft": { "name": "Stage 4 voltage (Extract)" },
+      "software_version": { "name": "Software version" },
+      "date_str": { "name": "Date (device)" },
+      "time_str": { "name": "Time (device)" }
+    },
+    "binary_sensor": {
+      "filter_warning": { "name": "Filter replacement required" },
+      "auto_mode": { "name": "Automatic mode active" },
+      "party_enabled": { "name": "Party mode active" },
+      "ext_contact": { "name": "External contact" }
+    },
+    "switch": {
+      "variablen_scan_debug": { "name": "Variable scan (debug)" }
+    }
+  },
+  "services": {
+    "set_auto_mode": { "name": "Set auto mode", "fields": { "enabled": { "name": "Enabled" } } },
+    "set_fan_level": { "name": "Set fan level", "fields": { "level": { "name": "Level (0–4)" } } },
+    "set_party_enabled": { "name": "Set party mode", "fields": { "enabled": { "name": "Enabled" } } }
+  }
+}

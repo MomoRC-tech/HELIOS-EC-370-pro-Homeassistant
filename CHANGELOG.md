@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.1.0 — 2025-10-12
+- Internationalization and UI polish
+	- Add translations (en/de) and wire translation_key across Climate, Fan, Select, Switch, Sensors, and Binary Sensors so entity names localize based on Home Assistant language.
+	- Remove unit label "level" from level-like variables so entities show no unit for these values.
+	- Adjust default visibility and categories for some diagnostic sensors (voltages, party/bypass/frostschutz details) to declutter dashboards.
+	- Minor docs updates.
+
 ## 4.0.0 — 2025-10-11
 - Major release: UX/docs polish and cleanups
 	- Climate/Fan entity pictures standardized to the integration endpoint `/api/helios_pro_ventilation/image.png` (public; serves `config/www` image if present or falls back to packaged image/transparent PNG).

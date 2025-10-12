@@ -46,6 +46,8 @@ class HeliosBaseEntity:
 class HeliosBinarySensor(HeliosBaseEntity, BinarySensorEntity):
 	def __init__(self, coord, key, name, entry):
 		super().__init__(coord, key, name, entry)
+		# Use translations for name
+		self._attr_translation_key = key
 		# Mark "filter_warning" explicitly as a problem/diagnostic entity
 		if self._key == "filter_warning":
 			self._attr_device_class = BinarySensorDeviceClass.PROBLEM
