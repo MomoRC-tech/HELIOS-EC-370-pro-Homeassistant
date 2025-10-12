@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.2.0 — 2025-10-12
+- Latest: Consolidated minor UX polish since 4.0.0
+	- Removed unit "level" from fan-related sensors so they display without a unit.
+	- Documentation and Lovelace examples updated to reflect current entity picture behavior and controls.
+
 ## 4.0.1 — 2025-10-12
 - UX: Removed unit "level" from fan-related sensors (fan_level, min_fan_level, party_level, zuluft_level, abluft_level, quiet_level) so they display without a unit.
 
