@@ -1,11 +1,7 @@
 # Changelog
 
-## 4.1.0 — 2025-10-12
-- Internationalization and UI polish
-	- Add translations (en/de) and wire translation_key across Climate, Fan, Select, Switch, Sensors, and Binary Sensors so entity names localize based on Home Assistant language.
-	- Remove unit label "level" from level-like variables so entities show no unit for these values.
-	- Adjust default visibility and categories for some diagnostic sensors (voltages, party/bypass/frostschutz details) to declutter dashboards.
-	- Minor docs updates.
+## 4.0.1 — 2025-10-12
+- UX: Removed unit "level" from fan-related sensors (fan_level, min_fan_level, party_level, zuluft_level, abluft_level, quiet_level) so they display without a unit.
 
 ## 4.0.0 — 2025-10-11
 - Major release: UX/docs polish and cleanups
