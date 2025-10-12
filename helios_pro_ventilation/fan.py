@@ -45,7 +45,7 @@ class HeliosFan(FanEntity):
     _attr_should_poll = False
     _attr_supported_features = FanEntityFeature.SET_SPEED | FanEntityFeature.PRESET_MODE
     _attr_preset_modes = PRESET_MODES
-    _attr_name = "Helios Lüfter"
+    _attr_translation_key = "helios_fan"
 
     def __init__(self, coord: Any, entry: ConfigEntry) -> None:
         self._coord = coord

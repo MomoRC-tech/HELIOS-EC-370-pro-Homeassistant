@@ -1,0 +1,52 @@
+{
+  "title": "Helios EC‑Pro Lüftung",
+  "entity": {
+    "climate": { "helios_climate": { "name": "Helios Lüftung" } },
+    "fan": { "helios_fan": { "name": "Helios Lüfter" } },
+    "select": { "fan_level_select": { "name": "Lüfterstufe (Auswahl)" } },
+    "sensor": {
+      "fan_level": { "name": "Lüfterstufe" },
+      "temp_outdoor": { "name": "Außenlufttemperatur" },
+      "temp_extract": { "name": "Ablufttemperatur" },
+      "temp_exhaust": { "name": "Fortlufttemperatur" },
+      "temp_supply": { "name": "Zulufttemperatur" },
+      "party_curr_time_min": { "name": "Party verbleibend (min)" },
+      "party_time_min_preselect": { "name": "Party Zeit (Vorauswahl)" },
+      "hours_on": { "name": "Betriebsstunden" },
+      "min_fan_level": { "name": "Minimale Lüfterstufe" },
+      "change_filter_months": { "name": "Filterwechsel (Monate)" },
+      "party_level": { "name": "Party Lüfterstufe" },
+      "zuluft_level": { "name": "Zuluft Lüfterstufe" },
+      "abluft_level": { "name": "Abluft Lüfterstufe" },
+      "bypass1_temp": { "name": "Bypass Temperatur 1" },
+      "bypass2_temp": { "name": "Bypass Temperatur 2" },
+      "frostschutz_temp": { "name": "Frostschutz Temperatur" },
+      "nachlaufzeit_s": { "name": "Nachlaufzeit (s)" },
+      "fan1_voltage_zuluft": { "name": "Stufe 1 Spannung Zuluft" },
+      "fan1_voltage_abluft": { "name": "Stufe 1 Spannung Abluft" },
+      "fan2_voltage_zuluft": { "name": "Stufe 2 Spannung Zuluft" },
+      "fan2_voltage_abluft": { "name": "Stufe 2 Spannung Abluft" },
+      "fan3_voltage_zuluft": { "name": "Stufe 3 Spannung Zuluft" },
+      "fan3_voltage_abluft": { "name": "Stufe 3 Spannung Abluft" },
+      "fan4_voltage_zuluft": { "name": "Stufe 4 Spannung Zuluft" },
+      "fan4_voltage_abluft": { "name": "Stufe 4 Spannung Abluft" },
+      "software_version": { "name": "Software Version" },
+      "date_str": { "name": "Datum (Gerät)" },
+      "time_str": { "name": "Uhrzeit (Gerät)" }
+    },
+    "binary_sensor": {
+      "filter_warning": { "name": "Filterwechsel erforderlich" },
+      "auto_mode": { "name": "Automatikmodus aktiv" },
+      "party_enabled": { "name": "Partymodus aktiv" },
+      "ext_contact": { "name": "Externer Kontakt" }
+    },
+    "switch": {
+      "variablen_scan_debug": { "name": "variablen Scan (debug)" }
+    }
+  },
+  "services": {
+    "set_auto_mode": { "name": "Automatikmodus setzen", "fields": { "enabled": { "name": "Aktiviert" } } },
+    "set_fan_level": { "name": "Lüfterstufe setzen", "fields": { "level": { "name": "Stufe (0–4)" } } },
+    "set_party_enabled": { "name": "Partymodus setzen", "fields": { "enabled": { "name": "Aktiviert" } } }
+  }
+}
