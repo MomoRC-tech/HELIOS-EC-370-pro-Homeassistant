@@ -38,8 +38,18 @@ async def async_setup_entry(hass, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
     coord = data["coordinator"]
 
-    entities: list[SwitchEntity] = [HeliosDebugScanSwitch(coord, entry.entry_id)]
+    entities: list[SwitchEntity] = [
+        HeliosDebugScanSwitch(coord, entry.entry_id),
+        HeliosFanLevel1ToggleSwitch(coord, entry),
+    ]
     async_add_entities(entities)
+    # Register for push updates so is_on reflects current coordinator state
+    try:
+        for e in entities:
+            if hasattr(coord, "register_entity"):
+                coord.register_entity(e)
+    except Exception:
+        pass
 
 
 class HeliosDebugScanSwitch(SwitchEntity):
@@ -125,3 +135,69 @@ class HeliosDebugScanSwitch(SwitchEntity):
             self.hass.loop.call_soon_threadsafe(_clear)
         except Exception:
             pass
+
+
+class HeliosFanLevel1ToggleSwitch(SwitchEntity):
+    """Primary switch to toggle ventilation between OFF and manual level 1.
+
+    - turn_on(): ensure manual mode and set fan level = 1
+    - turn_off(): ensure manual mode and set fan level = 0 (OFF)
+    - is_on: True when manual mode and current level == 1
+    """
+
+    _attr_has_entity_name = True
+
+    def __init__(self, coordinator: Any, entry: Any) -> None:
+        self._coord = coordinator
+        self._entry = entry
+        try:
+            self._attr_device_info = DeviceInfo(
+                identifiers={(DOMAIN, entry.entry_id)},
+                name="Helios EC-Pro",
+                manufacturer="Helios",
+                model="EC-Pro",
+            )
+        except Exception:
+            pass
+        # Stable unique id derived from entry id
+        try:
+            self._attr_unique_id = f"{entry.entry_id}-toggle_level1"
+        except Exception:
+            self._attr_unique_id = "helios_toggle_level1"
+
+    @property
+    def name(self) -> str:
+        return "Lüftung EIN/AUS (Stufe 1)"
+
+    @property
+    def icon(self) -> str | None:
+        return "mdi:fan" if self.is_on else "mdi:fan-off"
+
+    @property
+    def is_on(self) -> bool:
+        try:
+            auto = bool(self._coord.data.get("auto_mode", False))
+            lvl = int(self._coord.data.get("fan_level", 0) or 0)
+            return (not auto) and (lvl == 1)
+        except Exception:
+            return False
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        try:
+            if hasattr(self._coord, "set_auto_mode"):
+                self._coord.set_auto_mode(False)
+            if hasattr(self._coord, "set_fan_level"):
+                self._coord.set_fan_level(1)
+        except Exception as exc:
+            _LOGGER.warning("Helios toggle: failed to turn on level 1: %s", exc)
+        self.async_write_ha_state()
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        try:
+            if hasattr(self._coord, "set_auto_mode"):
+                self._coord.set_auto_mode(False)
+            if hasattr(self._coord, "set_fan_level"):
+                self._coord.set_fan_level(0)
+        except Exception as exc:
+            _LOGGER.warning("Helios toggle: failed to turn off (level 0): %s", exc)
+        self.async_write_ha_state()
