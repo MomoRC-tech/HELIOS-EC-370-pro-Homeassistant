@@ -6,6 +6,9 @@
 ## 4.5.2 — 2025-10-13
 - Fix: Diagnostic calendar text sensors now JSON‑encode list/dict values before exposing state, so Home Assistant treats them as valid text instead of marking them unavailable. This makes “Kalender Montag … Sonntag” visible after calendar reads.
 
+## 4.5.3 — 2025-10-13
+- Fix: Avoid blocking file IO on the HA event loop by reading `manifest.json` via `hass.async_add_executor_job` during setup; removes the "Detected blocking call to open" warning.
+
 ## 4.5.0 — 2025-10-13
 - Calendar:
 	- New `calendar_copy_day` presets: `weekday` (Mon → Tue–Fri) and `all_days` toggle to copy to Mon–Sun.
