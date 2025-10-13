@@ -4,9 +4,15 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResult
 from .const import DOMAIN, DEFAULT_HOST, DEFAULT_PORT
+from .options_flow import HeliosOptionsFlowHandler
 
 class HeliosConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
+
+    @staticmethod
+    def async_get_options_flow(config_entry: config_entries.ConfigEntry):
+        """Return the options flow handler."""
+        return HeliosOptionsFlowHandler(config_entry)
 
     async def async_step_user(self, user_input=None) -> FlowResult:
         if user_input is not None:

@@ -41,8 +41,9 @@ async def async_setup(hass: HomeAssistant, config: dict):
     return True
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-    host = entry.data.get("host", DEFAULT_HOST)
-    port = entry.data.get("port", DEFAULT_PORT)
+    # Read from options first (if set), then fall back to data, then defaults
+    host = entry.options.get("host", entry.data.get("host", DEFAULT_HOST))
+    port = entry.options.get("port", entry.data.get("port", DEFAULT_PORT))
 
     coord = HeliosCoordinatorWithQueue(hass)
     stop_event = threading.Event()
@@ -142,7 +143,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
         _LOGGER.info("✅ Helios services ready: set_auto_mode, set_fan_level, set_party_enabled")
 
+    # Register options update listener to reload the integration when options change
+    entry.async_on_unload(entry.add_update_listener(async_options_update_listener))
+
     return True
+
+async def async_options_update_listener(hass: HomeAssistant, entry: ConfigEntry):
+    """Handle options update by reloading the integration."""
+    await hass.config_entries.async_reload(entry.entry_id)
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
