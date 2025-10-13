@@ -1,3 +1,11 @@
+## 5.0.2
+
+Patch release
+- Time sync services (set_device_datetime, sync_device_time) and options (hourly auto-sync; default 20 min drift)
+- New sensors: device_clock_drift_min, device_clock_in_sync, device_date_time_state
+- Faster date/time availability after startup (30s retry until present)
+- Calendar UI: clock/status caption in toolbar
+
 ## 5.1.0
 
 Enhancements
