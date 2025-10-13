@@ -110,6 +110,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         SERVICE_SET_AUTO_MODE_SCHEMA = vol.Schema({ vol.Optional("enabled", default=True): cv.boolean })
         SERVICE_SET_FAN_LEVEL_SCHEMA = vol.Schema({ vol.Required("level"): vol.All(vol.Coerce(int), vol.Range(min=0, max=4)) })
         SERVICE_SET_PARTY_ENABLED_SCHEMA = vol.Schema({ vol.Optional("enabled", default=True): cv.boolean })
+        # Calendar services
+        SERVICE_CALENDAR_REQUEST_SCHEMA = vol.Schema({ vol.Required("day"): vol.All(vol.Coerce(int), vol.Range(min=0, max=6)) })
+        SERVICE_CALENDAR_SET_SCHEMA = vol.Schema({
+            vol.Required("day"): vol.All(vol.Coerce(int), vol.Range(min=0, max=6)),
+            vol.Required("levels"): vol.All(list, vol.Length(min=48, max=48)),
+        })
 
         async def handle_set_auto_mode(call):
             for d in hass.data.get(DOMAIN, {}).values():
@@ -131,6 +137,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         hass.services.async_register(DOMAIN, "set_fan_level", handle_set_fan_level, schema=SERVICE_SET_FAN_LEVEL_SCHEMA)
         hass.services.async_register(DOMAIN, "set_party_enabled", handle_set_party_enabled, schema=SERVICE_SET_PARTY_ENABLED_SCHEMA)
 
+        async def handle_calendar_request(call):
+            day = int(call.data.get("day"))
+            for d in hass.data.get(DOMAIN, {}).values():
+                d["coordinator"].request_calendar_day(day)
+
+        async def handle_calendar_set(call):
+            day = int(call.data.get("day"))
+            levels = list(call.data.get("levels"))
+            for d in hass.data.get(DOMAIN, {}).values():
+                d["coordinator"].set_calendar_day(day, levels)
+
+        hass.services.async_register(DOMAIN, "calendar_request_day", handle_calendar_request, schema=SERVICE_CALENDAR_REQUEST_SCHEMA)
+        hass.services.async_register(DOMAIN, "calendar_set_day", handle_calendar_set, schema=SERVICE_CALENDAR_SET_SCHEMA)
+
         # bind services.yaml so the Integration tile shows service descriptions
         try:
             services_path = os.path.join(os.path.dirname(__file__), "services.yaml")
@@ -141,7 +161,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         except Exception:  # fine if it’s missing
             pass
 
-        _LOGGER.info("✅ Helios services ready: set_auto_mode, set_fan_level, set_party_enabled")
+    _LOGGER.info("✅ Helios services ready: set_auto_mode, set_fan_level, set_party_enabled, calendar_request_day, calendar_set_day")
 
     # Register options update listener to reload the integration when options change
     entry.async_on_unload(entry.add_update_listener(async_options_update_listener))

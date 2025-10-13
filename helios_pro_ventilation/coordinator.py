@@ -2,6 +2,7 @@ import logging, time, threading
 from typing import Any, Dict, List
 from collections import deque
 from .const import HeliosVar, CLIENT_ID
+from .parser import _checksum, calendar_pack_levels48_to24
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -113,6 +114,20 @@ class HeliosCoordinatorWithQueue(HeliosCoordinator):
         frame = bytes([CLIENT_ID, 0x00, 0x01, int(var)])
         return frame + bytes([_checksum(frame)])
 
+    def _build_calendar_write_extended(self, var: HeliosVar, levels48: list[int]) -> bytes:
+        """Build extended calendar write with 52-byte payload (0x34):
+        [0x11, 0x01, 0x34, var, 0x00, 0x00, 24 packed bytes, 25x 0x00 padding, chk]
+        """
+        packed24 = calendar_pack_levels48_to24(levels48)
+        payload = bytearray()
+        payload.extend([CLIENT_ID, 0x01, 0x34, int(var), 0x00, 0x00])
+        payload.extend(packed24)
+        # pad 25 zeros
+        payload.extend([0x00] * 25)
+        chk = _checksum(bytes(payload))
+        payload.append(chk)
+        return bytes(payload)
+
     # ---------- SERVICE HANDLERS ----------
     def set_auto_mode(self, enabled: bool):
         """Enable or disable AUTO mode."""
@@ -152,3 +167,20 @@ class HeliosCoordinatorWithQueue(HeliosCoordinator):
             )
         except Exception as exc:
             _LOGGER.warning("HeliosPro: set_party_enabled failed: %s", exc)
+
+    # ---------- Calendar API ----------
+    def request_calendar_day(self, day: int):
+        """Queue a read for a calendar day (0=Mon..6=Sun)."""
+        day = max(0, min(6, int(day)))
+        var = HeliosVar(int(HeliosVar.Var_00_calendar_mon) + day)
+        self.queue_frame(self._build_read_request(var))
+
+    def set_calendar_day(self, day: int, levels48: list[int]):
+        """Write a calendar day using extended format matching ESP32 implementation."""
+        if len(levels48) != 48:
+            raise ValueError("levels48 must have length 48")
+        day = max(0, min(6, int(day)))
+        var = HeliosVar(int(HeliosVar.Var_00_calendar_mon) + day)
+        frame = self._build_calendar_write_extended(var, levels48)
+        self.queue_frame(frame)
+        _LOGGER.info("HeliosPro: queued calendar write for day %d → %s", day, frame.hex(" "))

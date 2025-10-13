@@ -1,5 +1,12 @@
 import socket, threading, logging, time
-from .parser import try_parse_broadcast, try_parse_var3a, try_parse_ping, try_parse_var_generic, _checksum
+from .parser import (
+    try_parse_broadcast,
+    try_parse_var3a,
+    try_parse_ping,
+    try_parse_var_generic,
+    try_parse_calendar,
+    _checksum,
+)
 from .const import CLIENT_ID, HeliosVar
 
 _LOGGER = logging.getLogger(__name__)
@@ -167,6 +174,21 @@ class HeliosBroadcastReader(threading.Thread):
                                 })
                         except Exception as map_exc:
                             _LOGGER.debug("Generic var mapping failed: %s", map_exc)
+                        made_progress = True
+                        continue
+
+                    # Calendar day response: meta + 24 bytes
+                    cal = try_parse_calendar(self.buf)
+                    if cal:
+                        try:
+                            var = cal.get("var")
+                            levels = cal.get("levels48")
+                            if var is not None and isinstance(levels, list):
+                                # store by day index 0..6
+                                day = int(var) - int(HeliosVar.Var_00_calendar_mon)
+                                self.coord.update_values({f"calendar_day_{day}": levels})
+                        except Exception:
+                            pass
                         made_progress = True
                         continue
 
