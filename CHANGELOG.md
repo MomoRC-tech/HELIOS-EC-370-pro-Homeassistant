@@ -1,5 +1,8 @@
 # Changelog
 
+## 4.4.1 — 2025-10-13
+- Perf: Faster startup retries when the bridge isn’t reachable — 2s connect timeout and 1s backoff on connect failure; clearer logs.
+
 ## 4.4.0 — 2025-10-13
 - Feature: New switch "Lüftung EIN/AUS (Stufe 1)" to toggle ventilation between OFF and manual level 1 — ideal for Android Companion entity widget.
 
