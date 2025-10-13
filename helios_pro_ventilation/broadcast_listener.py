@@ -90,6 +90,21 @@ class HeliosBroadcastReader(threading.Thread):
                         made_progress = True
                         continue
 
+                    # Calendar day response: meta + 24 bytes
+                    cal = try_parse_calendar(self.buf)
+                    if cal:
+                        try:
+                            var = cal.get("var")
+                            levels = cal.get("levels48")
+                            if var is not None and isinstance(levels, list):
+                                # store by day index 0..6
+                                day = int(var) - int(HeliosVar.Var_00_calendar_mon)
+                                self.coord.update_values({f"calendar_day_{day}": levels})
+                        except Exception:
+                            pass
+                        made_progress = True
+                        continue
+
                     generic = try_parse_var_generic(self.buf)
                     if generic:
                         # Forward to optional debug callback first
@@ -177,21 +192,6 @@ class HeliosBroadcastReader(threading.Thread):
                         made_progress = True
                         continue
 
-                    # Calendar day response: meta + 24 bytes
-                    cal = try_parse_calendar(self.buf)
-                    if cal:
-                        try:
-                            var = cal.get("var")
-                            levels = cal.get("levels48")
-                            if var is not None and isinstance(levels, list):
-                                # store by day index 0..6
-                                day = int(var) - int(HeliosVar.Var_00_calendar_mon)
-                                self.coord.update_values({f"calendar_day_{day}": levels})
-                        except Exception:
-                            pass
-                        made_progress = True
-                        continue
-
                     if len(self.buf) > 2048:
                         self.buf.clear()
 
@@ -242,6 +242,9 @@ class HeliosBroadcastReader(threading.Thread):
         startup_done = False
         # One-time calendar read (all 7 days) after first ping, paced
         calendar_startup_done = False
+        # Fallback timer: if no ping is observed within this window, still queue initial calendar reads
+        start_time = time.time()
+        calendar_fallback_seconds = 15.0
         while not self.stop_event.is_set():
             now = time.time()
             # Always poll Var_3A every ~30s for temperatures
@@ -306,7 +309,10 @@ class HeliosBroadcastReader(threading.Thread):
                 startup_done = True
 
             # After first ping observed, read all 7 calendar days once, paced
-            if (not calendar_startup_done) and self.coord.last_ping_time > 0:
+            # Fallback: if no ping within calendar_fallback_seconds since thread start, queue anyway
+            if (not calendar_startup_done) and (
+                self.coord.last_ping_time > 0 or (now - start_time >= calendar_fallback_seconds)
+            ):
                 try:
                     for day in range(7):
                         var = HeliosVar(int(HeliosVar.Var_00_calendar_mon) + day)
@@ -316,7 +322,13 @@ class HeliosBroadcastReader(threading.Thread):
                         # Pace calendar requests slightly higher to be gentle
                         time.sleep(0.1)
                     calendar_startup_done = True
-                    _LOGGER.info("Queued initial calendar read for all days (Mon..Sun)")
+                    if self.coord.last_ping_time > 0:
+                        _LOGGER.info("Queued initial calendar read for all days (Mon..Sun) after first ping")
+                    else:
+                        _LOGGER.info(
+                            "Queued initial calendar read for all days (Mon..Sun) via fallback (no ping observed in %.0fs)",
+                            calendar_fallback_seconds,
+                        )
                 except Exception as _exc:
                     _LOGGER.debug("Calendar startup read queue failed: %s", _exc)
 

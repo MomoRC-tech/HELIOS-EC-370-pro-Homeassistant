@@ -45,11 +45,6 @@ class HeliosFanLevelSelect(SelectEntity):
             manufacturer="Helios",
             model="EC-Pro",
         )
-        try:
-            if hasattr(coord, "register_entity"):
-                coord.register_entity(self)
-        except Exception:
-            pass
 
     @property
     def current_option(self) -> str | None:
@@ -66,3 +61,10 @@ class HeliosFanLevelSelect(SelectEntity):
         except Exception as exc:
             _LOGGER.warning("Failed to set fan level via select to %s: %s", option, exc)
         self.async_write_ha_state()
+
+    async def async_added_to_hass(self) -> None:
+        try:
+            if hasattr(self._coord, "register_entity"):
+                self._coord.register_entity(self)
+        except Exception:
+            pass

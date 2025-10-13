@@ -18,8 +18,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 		HeliosBinarySensor(coord, "ext_contact", "Externer Kontakt", entry),
 	]
 	async_add_entities(entities)
-	for e in entities:
-		coord.register_entity(e)
 
 
 class HeliosBaseEntity:
@@ -62,3 +60,10 @@ class HeliosBinarySensor(HeliosBaseEntity, BinarySensorEntity):
 	def is_on(self):
 		v = self._coord.data.get(self._key)
 		return bool(v) if v is not None else False
+
+	async def async_added_to_hass(self):
+		try:
+			if hasattr(self._coord, "register_entity"):
+				self._coord.register_entity(self)
+		except Exception:
+			pass

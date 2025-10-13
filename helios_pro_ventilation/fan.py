@@ -60,11 +60,6 @@ class HeliosFan(FanEntity):
             manufacturer="Helios",
             model="EC-Pro",
         )
-        try:
-            if hasattr(coord, "register_entity"):
-                coord.register_entity(self)
-        except Exception:
-            pass
 
     @property
     def entity_picture(self) -> Optional[str]:
@@ -105,6 +100,14 @@ class HeliosFan(FanEntity):
         except Exception as exc:
             _LOGGER.warning("Failed to set preset %s: %s", preset_mode, exc)
         self.async_write_ha_state()
+
+    async def async_added_to_hass(self) -> None:
+        # Register for coordinator push updates now that hass is set
+        try:
+            if hasattr(self._coord, "register_entity"):
+                self._coord.register_entity(self)
+        except Exception:
+            pass
 
     async def async_turn_on(self, percentage: Optional[int] = None, **kwargs: Any) -> None:
         # If manual and at level 0, set to level 1; else respect provided percentage

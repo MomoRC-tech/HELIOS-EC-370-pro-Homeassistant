@@ -43,13 +43,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
         HeliosFanLevel1ToggleSwitch(coord, entry),
     ]
     async_add_entities(entities)
-    # Register for push updates so is_on reflects current coordinator state
-    try:
-        for e in entities:
-            if hasattr(coord, "register_entity"):
-                coord.register_entity(e)
-    except Exception:
-        pass
 
 
 class HeliosDebugScanSwitch(SwitchEntity):
@@ -136,6 +129,13 @@ class HeliosDebugScanSwitch(SwitchEntity):
         except Exception:
             pass
 
+    async def async_added_to_hass(self) -> None:
+        try:
+            if hasattr(self._coord, "register_entity"):
+                self._coord.register_entity(self)
+        except Exception:
+            pass
+
 
 class HeliosFanLevel1ToggleSwitch(SwitchEntity):
     """Primary switch to toggle ventilation between OFF and manual level 1.
@@ -191,6 +191,14 @@ class HeliosFanLevel1ToggleSwitch(SwitchEntity):
         except Exception as exc:
             _LOGGER.warning("Helios toggle: failed to turn on level 1: %s", exc)
         self.async_write_ha_state()
+
+    async def async_added_to_hass(self) -> None:
+        # Register for coordinator push updates now that hass is set
+        try:
+            if hasattr(self._coord, "register_entity"):
+                self._coord.register_entity(self)
+        except Exception:
+            pass
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         try:

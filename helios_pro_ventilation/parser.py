@@ -201,6 +201,16 @@ def try_parse_var_generic(buf: bytearray) -> Optional[Dict[str, Any]]:
         return None
     frame = bytes(buf[:total])
     var_idx = frame[3]
+    # Guard: skip calendar indices (0x00..0x06) here to let try_parse_calendar handle them,
+    # especially for frames with address 0x11 and cmd 0x01 which carry meta+24 bytes.
+    try:
+        if (
+            addr == CLIENT_ID and cmd == 0x01 and
+            int(HeliosVar.Var_00_calendar_mon) <= var_idx <= int(HeliosVar.Var_06_calendar_sun)
+        ):
+            return None
+    except Exception:
+        pass
     try:
         var = HeliosVar(var_idx)
     except Exception:

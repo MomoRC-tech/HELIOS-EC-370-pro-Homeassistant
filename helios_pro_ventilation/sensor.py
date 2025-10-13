@@ -52,6 +52,14 @@ class HeliosTextSensor(HeliosBaseEntity, SensorEntity):
     @property
     def native_unit_of_measurement(self): return self._unit
 
+    async def async_added_to_hass(self):
+        # Register for coordinator push updates now that hass is available
+        try:
+            if hasattr(self._coord, "register_entity"):
+                self._coord.register_entity(self)
+        except Exception:
+            pass
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
     coord: HeliosCoordinator = data["coordinator"]
@@ -99,8 +107,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             pass
         entities.append(s)
     async_add_entities(entities)
-    for e in entities:
-        coord.register_entity(e)
+    # Registration now happens in each entity's async_added_to_hass to avoid hass=None races
 
 class HeliosNumberSensor(HeliosBaseEntity, SensorEntity):
     def __init__(self, coord, key, name, unit, entry):
@@ -178,3 +185,4 @@ class HeliosNumberSensor(HeliosBaseEntity, SensorEntity):
     def native_value(self): return self._coord.data.get(self._key)
     @property
     def native_unit_of_measurement(self): return self._unit
+

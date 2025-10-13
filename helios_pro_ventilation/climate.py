@@ -58,12 +58,6 @@ class HeliosClimate(ClimateEntity):
             manufacturer="Helios",
             model="EC-Pro",
         )
-        # Register for push updates from the coordinator
-        try:
-            if hasattr(coord, "register_entity"):
-                coord.register_entity(self)
-        except Exception:
-            pass
 
         # Push model: we get updates from the coordinator, so don't poll.
         self._attr_should_poll = False
@@ -150,6 +144,14 @@ class HeliosClimate(ClimateEntity):
             except Exception as exc:
                 _LOGGER.warning("Failed to set fan level 1: %s", exc)
         self.async_write_ha_state()
+
+    async def async_added_to_hass(self) -> None:
+        # Register for coordinator push updates now that hass is set
+        try:
+            if hasattr(self._coord, "register_entity"):
+                self._coord.register_entity(self)
+        except Exception:
+            pass
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         want_auto = preset_mode == "auto"

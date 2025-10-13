@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.5.4 — 2025-10-13
+- Fix: Calendar frames are now parsed by the calendar-specific decoder. The parser order was changed so calendar parsing runs before the generic var parser, and the generic parser skips calendar indices. This ensures `calendar_day_{0..6}` is populated reliably.
+- Improvement: Startup calendar read fallback. If no bus ping is detected within ~15s, the integration still queues a one-time read of all 7 calendar days (Mon..Sun). Previously, this batch only triggered after the first ping.
+- Stability: Entities now register with the coordinator in `async_added_to_hass`, avoiding early `async_write_ha_state()` calls when `hass` is not yet set. This removes the transient "Attribute hass is None" debug logs at startup.
+
 ## 4.5.1 — 2025-10-13
 - Fix: Service handlers now guard DOMAIN data entries without a coordinator (e.g., image registration flag). This resolves an error using `calendar_request_day` where a boolean was treated as a dict ("TypeError: 'bool' object is not subscriptable").
 
