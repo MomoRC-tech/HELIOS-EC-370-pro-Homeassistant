@@ -1,7 +1,7 @@
 {
   "domain": "helios_pro_ventilation",
   "name": "Helios EC-Pro Ventilation",
-  "version": "4.5.0",
+  "version": "4.5.1",
   "documentation": "https://github.com/MomoRC-tech/HELIOS-EC-370-pro-Homeassistant",
   "issue_tracker": "https://github.com/MomoRC-tech/HELIOS-EC-370-pro-Homeassistant/issues",
   "requirements": [],
