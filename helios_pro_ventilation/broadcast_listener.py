@@ -240,6 +240,8 @@ class HeliosBroadcastReader(threading.Thread):
         last_hourly = 0.0
         # One-time at startup vars
         startup_done = False
+        # One-time calendar read (all 7 days) after first ping, paced
+        calendar_startup_done = False
         while not self.stop_event.is_set():
             now = time.time()
             # Always poll Var_3A every ~30s for temperatures
@@ -302,6 +304,21 @@ class HeliosBroadcastReader(threading.Thread):
                         self.coord.queue_frame(frame)
                     time.sleep(0.05)
                 startup_done = True
+
+            # After first ping observed, read all 7 calendar days once, paced
+            if (not calendar_startup_done) and self.coord.last_ping_time > 0:
+                try:
+                    for day in range(7):
+                        var = HeliosVar(int(HeliosVar.Var_00_calendar_mon) + day)
+                        frame = self._build_read_request(var)
+                        if hasattr(self.coord, 'queue_frame'):
+                            self.coord.queue_frame(frame)
+                        # Pace calendar requests slightly higher to be gentle
+                        time.sleep(0.1)
+                    calendar_startup_done = True
+                    _LOGGER.info("Queued initial calendar read for all days (Mon..Sun)")
+                except Exception as _exc:
+                    _LOGGER.debug("Calendar startup read queue failed: %s", _exc)
 
             # Hourly polling for slowly changing vars
             if now - last_hourly >= 3600.0:
