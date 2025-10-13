@@ -44,7 +44,8 @@
     <button class="level" data-level="3">3</button>
     <button class="level" data-level="4">4</button>
     <button class="preset" id="preset-5122">Preset: 05:00–22:00 → 1</button>
-    <button class="btn" id="refresh">Refresh</button>
+  <button class="btn" id="refresh">Refresh</button>
+  <span class="legend" id="clockStatus"></span>
     <div style="flex-basis:100%; height:0"></div>
     <span>Range:</span>
     <input type="time" id="sch-start" value="06:00" step="1800" />
@@ -92,7 +93,8 @@
     let dragging = false;
     let copySourceDay = 0;
 
-    const statusEl = document.getElementById('status');
+  const statusEl = document.getElementById('status');
+  const clockStatus = document.getElementById('clockStatus');
   const grid = document.getElementById('grid');
   const scale = document.getElementById('scale');
     const dlg = document.getElementById('copyDialog');
@@ -181,6 +183,15 @@
           for(let d=0; d<7; d++) if(Array.isArray(js.days[d]) && js.days[d].length===48){ days[d] = js.days[d].map(Number); dirty[d] = false; }
           renderScale(); render();
           if(js.meta && Array.isArray(js.meta.missing_days) && js.meta.missing_days.length){ setStatus('Queued read for days: '+js.meta.missing_days.join(',')); }
+          // Update clock status caption if available
+          if(js.meta){
+            const s = js.meta.date_time_state || 'unknown';
+            const d = js.meta.date_str || '----‑‑‑‑';
+            const t = js.meta.time_str || '--:--';
+            const drift = (js.meta.clock_drift_min !== undefined && js.meta.clock_drift_min !== null) ? `${js.meta.clock_drift_min} min` : 'n/a';
+            const ok = js.meta.clock_in_sync === true;
+            clockStatus.textContent = `Clock: ${s} · ${d} ${t} · drift ${drift}${ok ? '' : ' (out of sync)'}`;
+          }
         }
       }catch(err){ setStatus('Load failed: '+err); }
     }

@@ -35,6 +35,7 @@ Full documentation: see `helios_pro_ventilation/documentation.md`.
  - Weekly calendar read/write services with packing of 48 half-hour levels per day
  - Copy-day service to duplicate schedules (Mon → Tue–Fri or all days)
  - Embedded calendar editor UI (sidebar + direct URL) with range scheduler
+ - Optional device time sync: manual services and opt-in hourly auto sync with drift threshold
 
 ---
 
@@ -183,6 +184,17 @@ logger:
 - `calendar_copy_day` (source_day: 0..6, preset: none|weekday, all_days: bool, target_days: [0..6])
   - If `preset=weekday`, copies to Tue–Fri; if `all_days=true`, copies to Mon–Sun and ignores `target_days`.
   - If the source calendar isn’t loaded yet, the integration queues a read and skips copying (try again afterward).
+ - `set_device_datetime` (year, month, day, hour, minute) — writes the device’s internal date/time.
+ - `sync_device_time` — sets the device clock to the Home Assistant host’s current local time.
+
+Options (Configure → Options)
+- `auto_time_sync` (bool): when enabled, the integration checks the device time hourly and corrects it if drift exceeds the threshold.
+- `time_sync_max_drift_min` (int, default 2): maximum permitted drift in minutes before auto-correction.
+
+Sensor
+- Diagnostic sensor `device_clock_drift_min` (disabled by default): shows current drift (minutes) between device clock and HA host time.
+ - Diagnostic binary sensor `device_clock_in_sync` (disabled by default): true if drift <= threshold.
+ - Text sensor `Geräteuhr Status` indicates "unknown/loading/ok".
 
 ---
 
@@ -327,6 +339,7 @@ You can view and edit the weekly schedule directly in Home Assistant.
   - Overnight ranges are supported (e.g., 22:00 → 06:00 wraps across midnight).
 - Unsaved indicator: days with local changes show a red bullet; click Save on the row or “Save selected” to write multiple days.
 - Refresh reloads current values from the integration; missing days will be queued for reading.
+ - The toolbar shows a compact clock/status caption (state, date/time, drift, sync) when available.
 
 ---
 

@@ -1,3 +1,14 @@
+## 5.1.0
+
+Enhancements
+- Time sync: new services `set_device_datetime` and `sync_device_time`; optional hourly auto-sync with drift threshold (default 20 min).
+- New sensors: `device_clock_drift_min` (diagnostic), `device_clock_in_sync` (diagnostic), and `device_date_time_state` (text).
+- Faster startup for date/time: retry reads every 30s until values available.
+- Calendar UI: shows a compact clock/status caption (state, date/time, drift, sync) in the toolbar.
+
+Docs
+- README and full docs updated for time sync services, options, sensors, and the UI caption.
+
 # Changelog
 
 ## 5.0.1 — 2025-10-13 (proposed)

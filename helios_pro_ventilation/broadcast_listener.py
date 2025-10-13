@@ -236,6 +236,8 @@ class HeliosBroadcastReader(threading.Thread):
         # Date/time more frequent polling
         last_v07 = 0.0
         last_v08 = 0.0
+        last_time_sync = 0.0
+        last_dt_retry = 0.0
         # Hourly-ish vars
         last_hourly = 0.0
         # One-time at startup vars
@@ -290,6 +292,73 @@ class HeliosBroadcastReader(threading.Thread):
                 if hasattr(self.coord, 'queue_frame'):
                     self.coord.queue_frame(frame)
                 last_v08 = now
+
+            # Startup assist: if date/time not yet populated, retry reads every 30s until available
+            try:
+                if now - last_dt_retry >= 30.0:
+                    date_ok = isinstance(self.coord.data.get("date_str"), str) and len(self.coord.data.get("date_str")) >= 8
+                    time_ok = isinstance(self.coord.data.get("time_str"), str) and len(self.coord.data.get("time_str")) >= 4
+                    if not (date_ok and time_ok):
+                        self.coord.queue_frame(self._build_read_request(HeliosVar.Var_07_date_month_year))
+                        self.coord.queue_frame(self._build_read_request(HeliosVar.Var_08_time_hour_min))
+                        # Expose a friendly state text
+                        try:
+                            self.coord.update_values({"device_date_time_state": "loading"})
+                        except Exception:
+                            pass
+                    else:
+                        try:
+                            self.coord.update_values({"device_date_time_state": "ok"})
+                        except Exception:
+                            pass
+                    last_dt_retry = now
+            except Exception:
+                pass
+
+            # Time sync drift check (hourly). Always compute drift; only correct when auto_time_sync is enabled.
+            try:
+                if now - last_time_sync >= 3600.0:
+                    import datetime as _dt
+                    date_s = str(self.coord.data.get("date_str") or "")
+                    time_s = str(self.coord.data.get("time_str") or "")
+                    if not date_s or not time_s:
+                        self.coord.queue_frame(self._build_read_request(HeliosVar.Var_07_date_month_year))
+                        self.coord.queue_frame(self._build_read_request(HeliosVar.Var_08_time_hour_min))
+                        try:
+                            self.coord.update_values({"device_date_time_state": "unknown"})
+                        except Exception:
+                            pass
+                    else:
+                        try:
+                            y, mo, d = [int(x) for x in date_s.split("-")]
+                            h, mi = [int(x) for x in time_s.split(":")]
+                            dev_dt = _dt.datetime(y, mo, d, h, mi)
+                            now_dt = _dt.datetime.now()
+                            drift = abs((now_dt - dev_dt).total_seconds()) / 60.0
+                            max_drift = max(0, int(getattr(self.coord, 'time_sync_max_drift_min', 20)))
+                            # Publish drift and in_sync status
+                            try:
+                                self.coord.update_values({
+                                    "device_clock_drift_min": round(drift, 1),
+                                    "device_clock_in_sync": drift <= max_drift,
+                                    "device_date_time_state": "ok",
+                                })
+                            except Exception:
+                                pass
+                            # Auto-correct only when enabled and drift exceeds threshold
+                            if getattr(self.coord, 'auto_time_sync', False) and drift > max_drift:
+                                try:
+                                    if hasattr(self.coord, 'set_device_datetime'):
+                                        self.coord.set_device_datetime(now_dt.year, now_dt.month, now_dt.day, now_dt.hour, now_dt.minute)
+                                        _LOGGER.info("Auto time sync: corrected device clock drift %.1f min (> %d)", drift, max_drift)
+                                except Exception as _exc:
+                                    _LOGGER.debug("Auto time sync set failed: %s", _exc)
+                        except Exception:
+                            self.coord.queue_frame(self._build_read_request(HeliosVar.Var_07_date_month_year))
+                            self.coord.queue_frame(self._build_read_request(HeliosVar.Var_08_time_hour_min))
+                    last_time_sync = now
+            except Exception as _exc:
+                _LOGGER.debug("Time sync drift check failed: %s", _exc)
 
             # Queue one-time reads at startup for mostly-static values
             if not startup_done:

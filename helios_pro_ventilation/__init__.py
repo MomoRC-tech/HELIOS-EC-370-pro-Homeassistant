@@ -50,6 +50,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     port = entry.options.get("port", entry.data.get("port", DEFAULT_PORT))
 
     coord = HeliosCoordinatorWithQueue(hass)
+    # Propagate options for auto time sync behavior
+    try:
+        coord.auto_time_sync = bool(entry.options.get("auto_time_sync", False))  # type: ignore[attr-defined]
+        coord.time_sync_max_drift_min = int(entry.options.get("time_sync_max_drift_min", 20))  # type: ignore[attr-defined]
+    except Exception:
+        pass
     stop_event = threading.Event()
     reader = HeliosBroadcastReader(host, port, coord, stop_event)
     reader.start()
@@ -158,7 +164,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                                 pass
                         else:
                             days.append([int(x) for x in v])
-                    return web.json_response({"days": days, "meta": {"missing_days": missing}})
+                    meta = {
+                        "missing_days": missing,
+                        "date_str": coord.data.get("date_str"),
+                        "time_str": coord.data.get("time_str"),
+                        "clock_drift_min": coord.data.get("device_clock_drift_min"),
+                        "clock_in_sync": coord.data.get("device_clock_in_sync"),
+                        "date_time_state": coord.data.get("device_date_time_state"),
+                    }
+                    return web.json_response({"days": days, "meta": meta})
 
             # POST /calendar/set
             class HeliosCalendarSet(HomeAssistantView):
@@ -242,7 +256,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         SERVICE_SET_AUTO_MODE_SCHEMA = vol.Schema({ vol.Optional("enabled", default=True): cv.boolean })
         SERVICE_SET_FAN_LEVEL_SCHEMA = vol.Schema({ vol.Required("level"): vol.All(vol.Coerce(int), vol.Range(min=0, max=4)) })
         SERVICE_SET_PARTY_ENABLED_SCHEMA = vol.Schema({ vol.Optional("enabled", default=True): cv.boolean })
-        # Calendar services
+    # Calendar services
         SERVICE_CALENDAR_REQUEST_SCHEMA = vol.Schema({ vol.Required("day"): vol.All(vol.Coerce(int), vol.Range(min=0, max=6)) })
         SERVICE_CALENDAR_SET_SCHEMA = vol.Schema({
             vol.Required("day"): vol.All(vol.Coerce(int), vol.Range(min=0, max=6)),
@@ -256,6 +270,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             vol.Optional("all_days", default=False): cv.boolean,
             vol.Optional("preset", default="none"): vol.In(["none", "weekday"]),
             vol.Optional("target_days", default=[]): [vol.All(vol.Coerce(int), vol.Range(min=0, max=6))],
+        })
+
+        # Date/time services
+        SERVICE_SET_DEVICE_DATETIME_SCHEMA = vol.Schema({
+            vol.Required("year"): vol.All(vol.Coerce(int), vol.Range(min=2000, max=2255)),
+            vol.Required("month"): vol.All(vol.Coerce(int), vol.Range(min=1, max=12)),
+            vol.Required("day"): vol.All(vol.Coerce(int), vol.Range(min=1, max=31)),
+            vol.Required("hour"): vol.All(vol.Coerce(int), vol.Range(min=0, max=23)),
+            vol.Required("minute"): vol.All(vol.Coerce(int), vol.Range(min=0, max=59)),
+        })
+        SERVICE_SYNC_DEVICE_TIME_SCHEMA = vol.Schema({
+            vol.Optional("now", default=True): cv.boolean,
         })
 
         async def handle_set_auto_mode(call):
@@ -321,6 +347,34 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
         hass.services.async_register(DOMAIN, "calendar_copy_day", handle_calendar_copy, schema=SERVICE_CALENDAR_COPY_SCHEMA)
 
+        async def handle_set_device_datetime(call):
+            y = int(call.data.get("year"))
+            mo = int(call.data.get("month"))
+            d = int(call.data.get("day"))
+            h = int(call.data.get("hour"))
+            mi = int(call.data.get("minute"))
+            for v in hass.data.get(DOMAIN, {}).values():
+                if isinstance(v, dict) and "coordinator" in v:
+                    coord = v["coordinator"]
+                    if hasattr(coord, "set_device_datetime"):
+                        coord.set_device_datetime(y, mo, d, h, mi)
+
+        hass.services.async_register(DOMAIN, "set_device_datetime", handle_set_device_datetime, schema=SERVICE_SET_DEVICE_DATETIME_SCHEMA)
+
+        async def handle_sync_device_time(call):
+            # Use HA's local time for best alignment with user expectations
+            import datetime as _dt
+            now = _dt.datetime.now()
+            y, mo, d = now.year, now.month, now.day
+            h, mi = now.hour, now.minute
+            for v in hass.data.get(DOMAIN, {}).values():
+                if isinstance(v, dict) and "coordinator" in v:
+                    coord = v["coordinator"]
+                    if hasattr(coord, "set_device_datetime"):
+                        coord.set_device_datetime(y, mo, d, h, mi)
+
+        hass.services.async_register(DOMAIN, "sync_device_time", handle_sync_device_time, schema=SERVICE_SYNC_DEVICE_TIME_SCHEMA)
+
         # bind services.yaml so the Integration tile shows service descriptions
         try:
             services_path = os.path.join(os.path.dirname(__file__), "services.yaml")
@@ -331,7 +385,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         except Exception:  # fine if it’s missing
             pass
 
-    _LOGGER.info("✅ Helios services ready: set_auto_mode, set_fan_level, set_party_enabled, calendar_request_day, calendar_set_day, calendar_copy_day")
+    _LOGGER.info("✅ Helios services ready: set_auto_mode, set_fan_level, set_party_enabled, calendar_request_day, calendar_set_day, calendar_copy_day, set_device_datetime, sync_device_time")
 
     # Register options update listener to reload the integration when options change
     entry.async_on_unload(entry.add_update_listener(async_options_update_listener))

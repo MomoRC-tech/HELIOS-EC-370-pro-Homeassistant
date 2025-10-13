@@ -99,12 +99,21 @@ class HeliosCoordinatorWithQueue(HeliosCoordinator):
 
     def _build_write_var1(self, var: HeliosVar, value: int) -> bytes:
         """Build generic write frame with 1 data byte (Var + 1 byte)."""
+        return self._build_write_var(var, [value & 0xFF])
+
+    def _build_write_var(self, var: HeliosVar, data_bytes: list[int]) -> bytes:
+        """Build generic write frame with N data bytes.
+
+        Layout: [CLIENT_ID, 0x01, length, var, data..., chk] where length = 1 (Var) + len(data).
+        """
+        data = [max(0, min(255, int(b))) for b in (data_bytes or [])]
+        length = 1 + len(data)
         payload = bytes([
             CLIENT_ID,
             0x01,  # write
-            0x02,  # payload length (Var + 1 byte)
+            length & 0xFF,
             int(var),
-            value & 0xFF,
+            *data,
         ])
         chk = _checksum(payload)
         return payload + bytes([chk])
@@ -229,3 +238,51 @@ class HeliosCoordinatorWithQueue(HeliosCoordinator):
             self.set_calendar_day(t, list(levels))
             # Optionally queue a read-back to refresh UI/state
             self.request_calendar_day(t)
+
+    # ---------- Date/Time API ----------
+    def set_device_date(self, year: int, month: int, day: int):
+        """Set device date (Var_07) using year/month/day.
+
+        Var_07 layout per enum note: [day, month, year_since_2000].
+        """
+        y = max(0, min(255, int(year) - 2000))
+        m = max(1, min(12, int(month)))
+        d = max(1, min(31, int(day)))
+        frame = self._build_write_var(HeliosVar.Var_07_date_month_year, [d, m, y])
+        self.queue_frame(frame)
+        # read-back for confirmation on next slot
+        self.queue_frame(self._build_read_request(HeliosVar.Var_07_date_month_year))
+        _LOGGER.info("HeliosPro: queued device date set to %04d-%02d-%02d → %s", int(year), m, d, frame.hex(" "))
+
+    def set_device_time(self, hour: int, minute: int):
+        """Set device time (Var_08) to hour/minute (local)."""
+        h = max(0, min(23, int(hour)))
+        mi = max(0, min(59, int(minute)))
+        frame = self._build_write_var(HeliosVar.Var_08_time_hour_min, [h, mi])
+        self.queue_frame(frame)
+        # read-back for confirmation on next slot
+        self.queue_frame(self._build_read_request(HeliosVar.Var_08_time_hour_min))
+        _LOGGER.info("HeliosPro: queued device time set to %02d:%02d → %s", h, mi, frame.hex(" "))
+
+    def set_device_datetime(self, year: int, month: int, day: int, hour: int, minute: int):
+        """Set both device date and time in a single send slot window if possible.
+
+        Frames are queued as Var_07 then Var_08 and should be sent within a send slot.
+        """
+        # Queue date first, then time
+        y = max(0, min(255, int(year) - 2000))
+        m = max(1, min(12, int(month)))
+        d = max(1, min(31, int(day)))
+        h = max(0, min(23, int(hour)))
+        mi = max(0, min(59, int(minute)))
+        f_date = self._build_write_var(HeliosVar.Var_07_date_month_year, [d, m, y])
+        f_time = self._build_write_var(HeliosVar.Var_08_time_hour_min, [h, mi])
+        self.queue_frame(f_date)
+        self.queue_frame(f_time)
+        # read-back after writes
+        self.queue_frame(self._build_read_request(HeliosVar.Var_07_date_month_year))
+        self.queue_frame(self._build_read_request(HeliosVar.Var_08_time_hour_min))
+        _LOGGER.info(
+            "HeliosPro: queued device datetime set to %04d-%02d-%02d %02d:%02d",
+            int(year), m, d, h, mi,
+        )

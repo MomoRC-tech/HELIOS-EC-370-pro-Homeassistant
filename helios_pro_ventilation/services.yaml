@@ -83,6 +83,16 @@ calendar_copy_day:
   description: Copy one day's 48-slot levels to one or more target days (0=Mon..6=Sun). If the source isn't loaded yet, a read is queued and no copy occurs.
   fields:
     source_day:
+      name: Source day
+      description: 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun
+      required: true
+      example: 0
+      selector:
+        number:
+          min: 0
+          max: 6
+          mode: slider
+          step: 1
     preset:
       name: Preset
       description: Optional preset to choose typical targets. 'weekday' copies to Tue–Fri.
@@ -95,16 +105,6 @@ calendar_copy_day:
               value: none
             - label: weekday (Tue–Fri)
               value: weekday
-      name: Source day
-      description: 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun
-      required: true
-      example: 0
-      selector:
-        number:
-          min: 0
-          max: 6
-          mode: slider
-          step: 1
     all_days:
       name: All days (Mon–Sun)
       description: If enabled, copies to all days and ignores the explicit Target days selection.
@@ -136,3 +136,68 @@ calendar_copy_day:
               value: 5
             - label: Sunday (6)
               value: 6
+
+set_device_datetime:
+  name: Set device date & time
+  description: Set the Helios controller's internal date and time.
+  fields:
+    year:
+      name: Year
+      description: Gregorian year (2000–2255, stored as year-2000)
+      required: true
+      example: 2025
+      selector:
+        number:
+          min: 2000
+          max: 2255
+          mode: box
+          step: 1
+    month:
+      name: Month
+      description: Month 1–12
+      required: true
+      example: 10
+      selector:
+        number:
+          min: 1
+          max: 12
+          mode: box
+          step: 1
+    day:
+      name: Day
+      description: Day of month 1–31
+      required: true
+      example: 13
+      selector:
+        number:
+          min: 1
+          max: 31
+          mode: box
+          step: 1
+    hour:
+      name: Hour
+      description: 0–23
+      required: true
+      example: 22
+      selector:
+        number:
+          min: 0
+          max: 23
+          mode: box
+          step: 1
+    minute:
+      name: Minute
+      description: 0–59
+      required: true
+      example: 41
+      selector:
+        number:
+          min: 0
+          max: 59
+          mode: box
+          step: 1
+
+sync_device_time:
+  name: Sync device time (now)
+  description: Set the Helios controller's internal date/time to the Home Assistant host's current local time.
+  fields: {}

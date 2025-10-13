@@ -121,6 +121,23 @@ Services
 	 - `preset=weekday` copies to Tue–Fri. If `all_days=true`, copies to Mon–Sun and ignores `target_days`.
 	 - If the source day is not loaded yet, the service queues a read and skips copying.
 
+Time synchronization
+- Services:
+	- `helios_pro_ventilation.set_device_datetime` (year, month, day, hour, minute)
+		- Writes Var_07 (date) and Var_08 (time) in a single send-slot sequence, then queues a read-back.
+	- `helios_pro_ventilation.sync_device_time`
+		- Sets the device clock to the HA host’s current local time.
+- Options (Configure → Options):
+	- `auto_time_sync` (bool): when enabled, the integration checks the device clock hourly and corrects it if the drift exceeds the threshold.
+	- `time_sync_max_drift_min` (int, default 20): drift threshold in minutes to trigger a correction.
+- Sensor:
+	- `device_clock_drift_min` (diagnostic, disabled by default): absolute difference (in minutes) between device and HA time based on the latest reads of Var_07/Var_08.
+	- `device_clock_in_sync` (diagnostic, disabled by default): boolean, true if drift <= threshold.
+	- `device_date_time_state` (text): "unknown", "loading", or "ok" based on the current read status.
+- Notes:
+	- Writes occur during send slots; if no ping is observed, they’ll be sent once a window opens.
+	- Time zone: by default, host local time is used to match user expectations.
+
 Calendar editor UI
 - You can manage the weekly schedule with a built-in editor:
 	- Where to open it:
@@ -135,6 +152,7 @@ Calendar editor UI
 		- Copy… opens a dialog to copy one day’s schedule to any subset of other days.
 		- Preset (05:00–22:00 → 1) quickly fills each day with level 1 from morning to late evening.
 		- Refresh reloads from the device; any day missing in memory triggers a queued read.
+		- The toolbar shows a clock/status caption (state/date/time/drift/sync) when available.
 
 Entity picture (optional)
 Diagnostic sensors (calendar)

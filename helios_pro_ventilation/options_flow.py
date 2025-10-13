@@ -29,5 +29,7 @@ class HeliosOptionsFlowHandler(config_entries.OptionsFlow):
         schema = vol.Schema({
             vol.Required("host", default=current_host): str,
             vol.Required("port", default=current_port): int,
+            vol.Optional("auto_time_sync", default=self.config_entry.options.get("auto_time_sync", False)): bool,
+            vol.Optional("time_sync_max_drift_min", default=self.config_entry.options.get("time_sync_max_drift_min", 20)): int,
         })
         return self.async_show_form(step_id="init", data_schema=schema)

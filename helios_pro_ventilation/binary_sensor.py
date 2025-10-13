@@ -16,6 +16,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 		HeliosBinarySensor(coord, "filter_warning", "Filterwechsel erforderlich", entry),
 		HeliosBinarySensor(coord, "party_enabled", "Partymodus aktiv", entry),
 		HeliosBinarySensor(coord, "ext_contact", "Externer Kontakt", entry),
+		HeliosBinarySensor(coord, "device_clock_in_sync", "Geräteuhr synchron", entry),
 	]
 	async_add_entities(entities)
 
@@ -50,6 +51,13 @@ class HeliosBinarySensor(HeliosBaseEntity, BinarySensorEntity):
 			self._attr_entity_category = EntityCategory.DIAGNOSTIC
 		# Hide ext_contact by default; it's an auxiliary input
 		if self._key == "ext_contact":
+			try:
+				self._attr_entity_category = EntityCategory.DIAGNOSTIC
+				self._attr_entity_registry_enabled_default = False
+			except Exception:
+				pass
+		# Mark device_clock_in_sync as diagnostic and hidden by default
+		if self._key == "device_clock_in_sync":
 			try:
 				self._attr_entity_category = EntityCategory.DIAGNOSTIC
 				self._attr_entity_registry_enabled_default = False

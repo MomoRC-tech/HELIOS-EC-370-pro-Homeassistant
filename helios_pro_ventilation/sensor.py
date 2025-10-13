@@ -82,6 +82,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         HeliosNumberSensor(coord, "bypass1_temp", "Bypass Temperatur 1", "°C", entry),
         HeliosNumberSensor(coord, "frostschutz_temp", "Frostschutz Temperatur", "°C", entry),
         HeliosNumberSensor(coord, "nachlaufzeit_s", "Nachlaufzeit", "s", entry),
+    HeliosNumberSensor(coord, "device_clock_drift_min", "Geräteuhr Abweichung", "min", entry),
         HeliosNumberSensor(coord, "fan1_voltage_zuluft", "Stufe 1 Spannung Zuluft", "V", entry),
         HeliosNumberSensor(coord, "fan1_voltage_abluft", "Stufe 1 Spannung Abluft", "V", entry),
         HeliosNumberSensor(coord, "fan2_voltage_zuluft", "Stufe 2 Spannung Zuluft", "V", entry),
@@ -93,6 +94,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         HeliosTextSensor(coord, "software_version", "Software Version", entry),
         HeliosTextSensor(coord, "date_str", "Datum (Gerät)", entry),
         HeliosTextSensor(coord, "time_str", "Uhrzeit (Gerät)", entry),
+    HeliosTextSensor(coord, "device_date_time_state", "Geräteuhr Status", entry),
     ]
     # Diagnostic sensors for calendar day visibility (disabled by default)
     day_names = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
@@ -167,6 +169,7 @@ class HeliosNumberSensor(HeliosBaseEntity, SensorEntity):
             "bypass1_temp",
             "bypass2_temp",
             "frostschutz_temp",
+            "device_clock_drift_min",
         }
         if key in diag_keys:
             try:
@@ -176,7 +179,7 @@ class HeliosNumberSensor(HeliosBaseEntity, SensorEntity):
                 # best-effort outside HA runtime
                 pass
         # Hide some less prominent numbers by default to declutter dashboards
-        if key in {"party_time_min_preselect", "party_level", "zuluft_level", "abluft_level", "nachlaufzeit_s"}:
+        if key in {"party_time_min_preselect", "party_level", "zuluft_level", "abluft_level", "nachlaufzeit_s", "device_clock_drift_min"}:
             try:
                 self._attr_entity_registry_enabled_default = False
             except Exception:
