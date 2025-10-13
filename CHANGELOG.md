@@ -1,5 +1,14 @@
 # Changelog
 
+## 5.0.0 — 2025-10-13
+- Working/Stabile Release: This major release consolidates the recent calendar features and reliability fixes and marks the integration as working and stable for everyday use.
+- Highlights since 4.5.x:
+	- Calendar: read/write support, day copy presets, validation, and diagnostic sensors.
+	- Robust parsing: calendar frames prioritized correctly; fallback startup read when no ping is observed.
+	- UX: Level 1 toggle switch; unified entity image; clearer entity categories; removed misleading "level" unit labels.
+	- Stability: non-blocking setup; safer service handlers; entity registration timing avoids hass=None race.
+	- Tests: suite covers parser and frame builders (10 tests passing).
+
 ## 4.5.4 — 2025-10-13
 - Fix: Calendar frames are now parsed by the calendar-specific decoder. The parser order was changed so calendar parsing runs before the generic var parser, and the generic parser skips calendar indices. This ensures `calendar_day_{0..6}` is populated reliably.
 - Improvement: Startup calendar read fallback. If no bus ping is detected within ~15s, the integration still queues a one-time read of all 7 calendar days (Mon..Sun). Previously, this batch only triggered after the first ping.
