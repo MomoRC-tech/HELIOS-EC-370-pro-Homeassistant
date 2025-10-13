@@ -1,4 +1,5 @@
 # sensor.py
+import json
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
@@ -39,7 +40,15 @@ class HeliosTextSensor(HeliosBaseEntity, SensorEntity):
         except Exception:
             pass
     @property
-    def native_value(self): return self._coord.data.get(self._key)
+    def native_value(self):
+        v = self._coord.data.get(self._key)
+        # Ensure HA receives a string for text sensors
+        if isinstance(v, (list, dict)):
+            try:
+                return json.dumps(v, separators=(",", ":"))
+            except Exception:
+                return str(v)
+        return v
     @property
     def native_unit_of_measurement(self): return self._unit
 
