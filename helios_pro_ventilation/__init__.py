@@ -128,19 +128,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
         async def handle_set_auto_mode(call):
             for d in hass.data.get(DOMAIN, {}).values():
-                d["coordinator"].set_auto_mode(bool(call.data.get("enabled", True)))
+                if isinstance(d, dict) and "coordinator" in d:
+                    d["coordinator"].set_auto_mode(bool(call.data.get("enabled", True)))
 
         async def handle_set_fan_level(call):
             lvl = int(call.data.get("level", 0))
             for d in hass.data.get(DOMAIN, {}).values():
-                d["coordinator"].set_fan_level(lvl)
+                if isinstance(d, dict) and "coordinator" in d:
+                    d["coordinator"].set_fan_level(lvl)
 
         async def handle_set_party_enabled(call):
             enabled = bool(call.data.get("enabled", True))
             for d in hass.data.get(DOMAIN, {}).values():
-                coord = d["coordinator"]
-                if hasattr(coord, "set_party_enabled"):
-                    coord.set_party_enabled(enabled)
+                if isinstance(d, dict) and "coordinator" in d:
+                    coord = d["coordinator"]
+                    if hasattr(coord, "set_party_enabled"):
+                        coord.set_party_enabled(enabled)
 
         hass.services.async_register(DOMAIN, "set_auto_mode", handle_set_auto_mode, schema=SERVICE_SET_AUTO_MODE_SCHEMA)
         hass.services.async_register(DOMAIN, "set_fan_level", handle_set_fan_level, schema=SERVICE_SET_FAN_LEVEL_SCHEMA)
@@ -149,7 +152,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         async def handle_calendar_request(call):
             day = int(call.data.get("day"))
             for d in hass.data.get(DOMAIN, {}).values():
-                d["coordinator"].request_calendar_day(day)
+                if isinstance(d, dict) and "coordinator" in d:
+                    d["coordinator"].request_calendar_day(day)
 
         async def handle_calendar_set(call):
             day = int(call.data.get("day"))
@@ -161,7 +165,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             if bad:
                 raise ValueError("levels values must be integers in range 0..4")
             for d in hass.data.get(DOMAIN, {}).values():
-                d["coordinator"].set_calendar_day(day, levels)
+                if isinstance(d, dict) and "coordinator" in d:
+                    d["coordinator"].set_calendar_day(day, levels)
 
         hass.services.async_register(DOMAIN, "calendar_request_day", handle_calendar_request, schema=SERVICE_CALENDAR_REQUEST_SCHEMA)
         hass.services.async_register(DOMAIN, "calendar_set_day", handle_calendar_set, schema=SERVICE_CALENDAR_SET_SCHEMA)
@@ -177,9 +182,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             elif all_days:
                 targets = [0, 1, 2, 3, 4, 5, 6]
             for d in hass.data.get(DOMAIN, {}).values():
-                coord = d["coordinator"]
-                if hasattr(coord, "copy_calendar_day"):
-                    coord.copy_calendar_day(src, targets)
+                if isinstance(d, dict) and "coordinator" in d:
+                    coord = d["coordinator"]
+                    if hasattr(coord, "copy_calendar_day"):
+                        coord.copy_calendar_day(src, targets)
 
         hass.services.async_register(DOMAIN, "calendar_copy_day", handle_calendar_copy, schema=SERVICE_CALENDAR_COPY_SCHEMA)
 
