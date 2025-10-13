@@ -121,6 +121,21 @@ Services
 	 - `preset=weekday` copies to Tue–Fri. If `all_days=true`, copies to Mon–Sun and ignores `target_days`.
 	 - If the source day is not loaded yet, the service queues a read and skips copying.
 
+Calendar editor UI
+- You can manage the weekly schedule with a built-in editor:
+	- Where to open it:
+		- Sidebar: “Helios Calendar” (opens an iframe)
+		- Direct URL: `/api/helios_pro_ventilation/calendar.html`
+	- Editing actions:
+		- Brush paint: click a brush level (0–4) and drag on the grid to paint half-hour slots.
+		- Range scheduler: choose Start and End time (30‑min increments), the target Level, select one or more days, and click “Schedule”.
+			- “Clear others” option clears all other slots on selected days before applying the range.
+			- Overnight wraps (e.g., 22:00 → 06:00) are supported.
+		- Save a single day with the Save button on its row, or use “Save selected” to write all checked days at once.
+		- Copy… opens a dialog to copy one day’s schedule to any subset of other days.
+		- Preset (05:00–22:00 → 1) quickly fills each day with level 1 from morning to late evening.
+		- Refresh reloads from the device; any day missing in memory triggers a queued read.
+
 Entity picture (optional)
 Diagnostic sensors (calendar)
 - Seven diagnostic text sensors (“Kalender Montag … Sonntag”) expose the raw 48-slot arrays stored in `coordinator.data` as text. They’re disabled by default and useful for visibility/testing schedules.

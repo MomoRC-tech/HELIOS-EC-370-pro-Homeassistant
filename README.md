@@ -22,6 +22,7 @@ Full documentation: see `helios_pro_ventilation/documentation.md`.
 - [License](#license)
 - [Changelog](#changelog)
 - [Lovelace examples: Climate and Fan](#lovelace-examples-climate-and-fan)
+ - [Calendar editor UI](#calendar-editor-ui)
 - [Roadmap / TODO](#roadmap--todo)
 
 ---
@@ -33,6 +34,7 @@ Full documentation: see `helios_pro_ventilation/documentation.md`.
 - Debug: one‑shot scan over Helios variables with a single INFO summary + file exports
  - Weekly calendar read/write services with packing of 48 half-hour levels per day
  - Copy-day service to duplicate schedules (Mon → Tue–Fri or all days)
+ - Embedded calendar editor UI (sidebar + direct URL) with range scheduler
 
 ---
 
@@ -310,6 +312,21 @@ cards:
       target: { entity_id: climate.helios_luftung }
       data: { fan_mode: "4" }
 ```
+
+---
+
+## Calendar editor UI
+
+You can view and edit the weekly schedule directly in Home Assistant.
+
+- Open it from the sidebar: Helios Calendar, or go to the direct URL: `/api/helios_pro_ventilation/calendar.html`.
+- The grid shows 7 rows (Mon..Sun) and 48 half-hour slots per day.
+- Brush painting: pick a brush level (0–4) and drag across slots to paint.
+- Range scheduler: pick Start and End time (30‑min steps), choose a Level, select day(s), then click Schedule.
+  - Optional “Clear others” resets unselected slots on those day(s) to 0 before applying the range.
+  - Overnight ranges are supported (e.g., 22:00 → 06:00 wraps across midnight).
+- Unsaved indicator: days with local changes show a red bullet; click Save on the row or “Save selected” to write multiple days.
+- Refresh reloads current values from the integration; missing days will be queued for reading.
 
 ---
 

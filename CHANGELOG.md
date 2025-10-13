@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.0.1 — 2025-10-13 (proposed)
+- UI: Calendar editor moved to external `calendar.html` and added a sidebar entry for quick access.
+- Scheduler: Start/End time + Level + multi-day selection with a “Schedule” button.
+- Option: “Clear others” toggle to reset unselected slots on selected days before applying a range.
+- UX: Unsaved-change markers per day and an hours timescale header above the grid.
+- Docs: README and full documentation updated with editor usage and tips.
+
 ## 5.0.0 — 2025-10-13
 - Working/Stabile Release: This major release consolidates the recent calendar features and reliability fixes and marks the integration as working and stable for everyday use.
 - Highlights since 4.5.x:

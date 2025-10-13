@@ -1,0 +1,303 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Helios Calendar</title>
+  <style>
+    :root { --gap: 2px; --cell: 14px; --font: 13px; }
+    body { font-family: system-ui, sans-serif; margin: 12px; color: #222; background: #fafafa; }
+    h1 { font-size: 18px; margin: 0 0 12px; }
+    .toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+    .level { padding:4px 8px; border:1px solid #ccc; cursor:pointer; border-radius:4px; background:#fff; }
+    .level.selected { outline:2px solid #0003; }
+    .preset { padding:4px 8px; border:1px solid #ccc; cursor:pointer; border-radius:4px; background:#fff; }
+    .grid { display:grid; grid-template-columns: 70px repeat(48, var(--cell)); gap: var(--gap); align-items:center; }
+    .row-label { font-size: var(--font); text-align:right; padding-right:8px; color:#333; }
+    .cell { width: var(--cell); height: var(--cell); border-radius: 3px; border:1px solid #0001; box-sizing: border-box; cursor:pointer; }
+    .actions { grid-column: 2 / span 48; display:flex; gap:8px; margin: 2px 0 12px; }
+    .btn { padding:4px 8px; border:1px solid #ccc; background:#fff; border-radius:4px; cursor:pointer; }
+    .legend { font-size: 12px; color:#555; margin-left:auto; }
+    .status { margin-left:auto; font-size:12px; color:#666; }
+    /* Colors: 0 gray, 1 light green, 2 dark green, 3 orange, 4 red */
+    .lvl-0 { background:#bdbdbd; }
+    .lvl-1 { background:#a6e3a1; }
+    .lvl-2 { background:#4caf50; }
+    .lvl-3 { background:#ff9800; }
+    .lvl-4 { background:#f44336; }
+    dialog { border:1px solid #ccc; border-radius:6px; padding:12px; }
+    /* Unsaved indicator */
+    .row-label.dirty::after { content: ' \2022'; color:#e53935; font-weight:700; }
+    /* Timescale header */
+    .timescale { margin-bottom:4px; }
+    .timescale .hour { font-size: 10px; color:#666; text-align:center; }
+    .timescale .empty { height: 1px; }
+  </style>
+</head>
+<body>
+  <h1>Helios Calendar</h1>
+  <div class="toolbar">
+    <span>Brush level:</span>
+    <button class="level" data-level="0">0 (Off)</button>
+    <button class="level" data-level="1">1</button>
+    <button class="level" data-level="2">2</button>
+    <button class="level" data-level="3">3</button>
+    <button class="level" data-level="4">4</button>
+    <button class="preset" id="preset-5122">Preset: 05:00–22:00 → 1</button>
+    <button class="btn" id="refresh">Refresh</button>
+    <div style="flex-basis:100%; height:0"></div>
+    <span>Range:</span>
+    <input type="time" id="sch-start" value="06:00" step="1800" />
+    <span>to</span>
+    <input type="time" id="sch-end" value="22:00" step="1800" />
+    <span>Level:</span>
+    <select id="sch-level">
+      <option value="0">0</option>
+      <option value="1" selected>1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+    </select>
+    <span>Days:</span>
+    <div id="sch-days" style="display:flex; gap:6px; align-items:center;"></div>
+    <button class="btn" id="sel-all">All</button>
+    <button class="btn" id="sel-weekdays">Weekdays</button>
+    <button class="btn" id="sel-weekends">Weekends</button>
+    <button class="btn" id="sel-none">None</button>
+    <label style="display:inline-flex; align-items:center; gap:4px;">
+      <input type="checkbox" id="sch-clear" /> Clear others
+    </label>
+    <button class="btn" id="btn-schedule">Schedule</button>
+    <button class="btn" id="btn-save-selected" title="Save all selected days">Save selected</button>
+    <span class="status" id="status"></span>
+  </div>
+  <div class="grid timescale" id="scale"></div>
+  <div class="grid" id="grid"></div>
+
+  <dialog id="copyDialog">
+    <form method="dialog">
+      <h3>Copy to days</h3>
+      <div id="copyDays"></div>
+      <div style="margin-top:8px; display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn" value="cancel">Cancel</button>
+        <button class="btn" value="ok">Copy</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    const dayNames = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    let days = Array.from({length:7}, () => Array(48).fill(0));
+    let brush = 1; // default brush level
+    let dragging = false;
+    let copySourceDay = 0;
+
+    const statusEl = document.getElementById('status');
+  const grid = document.getElementById('grid');
+  const scale = document.getElementById('scale');
+    const dlg = document.getElementById('copyDialog');
+    const copyDays = document.getElementById('copyDays');
+    const selDays = document.getElementById('sch-days');
+    const btnSchedule = document.getElementById('btn-schedule');
+    const btnSaveSelected = document.getElementById('btn-save-selected');
+    const selAll = document.getElementById('sel-all');
+    const selWeekdays = document.getElementById('sel-weekdays');
+    const selWeekends = document.getElementById('sel-weekends');
+    const selNone = document.getElementById('sel-none');
+
+    function setStatus(msg){ statusEl.textContent = msg; setTimeout(()=>{ if(statusEl.textContent===msg) statusEl.textContent=''; }, 4000); }
+    function cellClass(v){ return 'cell lvl-' + Math.max(0, Math.min(4, Number(v)||0)); }
+
+    // Build day selection checkboxes
+    function buildDaySelectors(){
+      selDays.innerHTML = '';
+      for(let d=0; d<7; d++){
+        const id = 'sd_'+d;
+        const label = document.createElement('label');
+        label.style.display = 'inline-flex';
+        label.style.alignItems = 'center';
+        label.style.gap = '2px';
+        label.innerHTML = `<input type="checkbox" id="${id}" data-day="${d}" /> ${dayNames[d]}`;
+        selDays.appendChild(label);
+      }
+    }
+    buildDaySelectors();
+
+    let dirty = Array(7).fill(false);
+
+    function renderScale(){
+      // Build a header row with 24 hour labels over 48 slots
+      scale.innerHTML = '';
+      const blank = document.createElement('div'); blank.className='empty'; scale.appendChild(blank);
+      for(let h=0; h<24; h++){
+        const hour = document.createElement('div');
+        hour.className = 'hour';
+        hour.style.gridColumn = 'span 2';
+        hour.textContent = String(h).padStart(2,'0');
+        scale.appendChild(hour);
+      }
+    }
+
+    function render(){
+      grid.innerHTML='';
+      for(let d=0; d<7; d++){
+        const lbl = document.createElement('div'); lbl.className='row-label' + (dirty[d] ? ' dirty' : ''); lbl.textContent=dayNames[d]; grid.appendChild(lbl);
+        for(let i=0;i<48;i++){
+          const c = document.createElement('div');
+          c.className = cellClass(days[d][i]);
+          c.dataset.day=d; c.dataset.slot=i;
+          c.addEventListener('mousedown', onDown);
+          c.addEventListener('mouseenter', onEnter);
+          c.addEventListener('touchstart', (e)=>{ dragging=true; apply(c); e.preventDefault(); }, {passive:false});
+          c.addEventListener('touchmove', (e)=>{ const t = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY); if(t && t.dataset && t.dataset.day!==undefined) apply(t); e.preventDefault(); }, {passive:false});
+          c.addEventListener('touchend', ()=> dragging=false);
+          grid.appendChild(c);
+        }
+        const actions = document.createElement('div'); actions.className='actions';
+        if(dirty[d]){ const chip=document.createElement('span'); chip.textContent='unsaved changes'; chip.style.color='#e53935'; chip.style.fontSize='12px'; actions.appendChild(chip); }
+        const saveBtn = document.createElement('button'); saveBtn.className='btn'; saveBtn.textContent='Save'; saveBtn.onclick=()=>saveDay(d);
+        const copyBtn = document.createElement('button'); copyBtn.className='btn'; copyBtn.textContent='Copy…'; copyBtn.onclick=()=>openCopy(d);
+        actions.appendChild(saveBtn); actions.appendChild(copyBtn);
+        grid.appendChild(actions);
+      }
+    }
+
+    function onDown(e){ dragging=true; apply(e.currentTarget); }
+    function onEnter(e){ if(dragging) apply(e.currentTarget); }
+    document.addEventListener('mouseup', ()=> dragging=false);
+
+    function apply(cell){
+      const d = Number(cell.dataset.day), i = Number(cell.dataset.slot);
+      days[d][i] = brush; dirty[d] = true; cell.className = cellClass(brush);
+      // Update row label dirty indicator without full re-render
+      const labels = grid.querySelectorAll('.row-label'); if(labels && labels[d]) labels[d].classList.add('dirty');
+    }
+
+    async function load(){
+      try{
+        const res = await fetch('/api/helios_pro_ventilation/calendar.json');
+        const js = await res.json();
+        if(Array.isArray(js.days)){
+          for(let d=0; d<7; d++) if(Array.isArray(js.days[d]) && js.days[d].length===48){ days[d] = js.days[d].map(Number); dirty[d] = false; }
+          renderScale(); render();
+          if(js.meta && Array.isArray(js.meta.missing_days) && js.meta.missing_days.length){ setStatus('Queued read for days: '+js.meta.missing_days.join(',')); }
+        }
+      }catch(err){ setStatus('Load failed: '+err); }
+    }
+
+    async function saveDay(day){
+      try{
+        const res = await fetch('/api/helios_pro_ventilation/calendar/set', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({day, levels: days[day]})});
+        if(!res.ok){ const t = await res.text(); throw new Error(t); }
+        dirty[day] = false; render(); setStatus('Saved day '+dayNames[day]);
+      }catch(err){ setStatus('Save failed: '+err); }
+    }
+
+    // Range scheduling helpers
+    function timeToIndex(t){
+      // t like "HH:MM"; we snap to 30-minute slots
+      const m = /^([0-1]?\d|2[0-3]):([0-5]\d)$/.exec(t||'');
+      if(!m) return null;
+      const h = Number(m[1]); const mm = Number(m[2]);
+      const half = mm < 30 ? 0 : (mm < 60 ? 1 : null);
+      if(half === null) return null;
+      return h*2 + half;
+    }
+
+    function getSelectedDays(){
+      const result = [];
+      for(let d=0; d<7; d++){
+        const el = document.getElementById('sd_'+d);
+        if(el && el.checked) result.push(d);
+      }
+      return result;
+    }
+
+    function applyRangeToDay(day, startIdx, endIdx, level, clearOthers){
+      const arr = days[day].slice();
+      if(clearOthers){ for(let i=0;i<48;i++) arr[i] = 0; }
+      if(startIdx === endIdx){
+        return; // ambiguous; require different times
+      }
+      if(endIdx > startIdx){
+        for(let i=startIdx; i<endIdx; i++) arr[i] = level;
+      } else {
+        for(let i=startIdx; i<48; i++) arr[i] = level;
+        for(let i=0; i<endIdx; i++) arr[i] = level;
+      }
+      days[day] = arr; dirty[day] = true;
+    }
+
+    function onSchedule(){
+      const startStr = document.getElementById('sch-start').value;
+      const endStr = document.getElementById('sch-end').value;
+      const lvl = Math.max(0, Math.min(4, Number(document.getElementById('sch-level').value)||0));
+      const clr = !!document.getElementById('sch-clear')?.checked;
+      const sIdx = timeToIndex(startStr);
+      const eIdx = timeToIndex(endStr);
+      const targets = getSelectedDays();
+      if(sIdx === null || eIdx === null){ setStatus('Please choose valid start/end times'); return; }
+      if(targets.length === 0){ setStatus('Please select at least one day'); return; }
+      if(sIdx === eIdx){ setStatus('Start and end must differ'); return; }
+      for(const d of targets) applyRangeToDay(d, sIdx, eIdx, lvl, clr);
+      render();
+      setStatus('Applied range to: '+targets.map(d=>dayNames[d]).join(', '));
+    }
+
+    async function onSaveSelected(){
+      const targets = getSelectedDays();
+      if(targets.length === 0){ setStatus('Please select at least one day'); return; }
+      try{
+        await Promise.all(targets.map(d=>saveDay(d)));
+        setStatus('Saved: '+targets.map(d=>dayNames[d]).join(', '));
+      }catch(err){ setStatus('Save selected failed: '+err); }
+    }
+
+    function openCopy(day){
+      copySourceDay = day; copyDays.innerHTML='';
+      for(let d=0; d<7; d++) if(d!==day){
+        const id='d_'+d; const div = document.createElement('div');
+        div.innerHTML = `<label><input type="checkbox" id="${id}" value="${d}"> ${dayNames[d]}</label>`;
+        copyDays.appendChild(div);
+      }
+      dlg.showModal();
+      dlg.addEventListener('close', async ()=>{
+        if(dlg.returnValue==='ok'){
+          const targets=[]; for(let d=0; d<7; d++){ const el=document.getElementById('d_'+d); if(el && el.checked) targets.push(d); }
+          if(targets.length){
+            try{
+              const res = await fetch('/api/helios_pro_ventilation/calendar/copy', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({source_day: copySourceDay, target_days: targets})});
+              if(!res.ok){ const t = await res.text(); throw new Error(t); }
+              setStatus('Copied '+dayNames[copySourceDay]+' → '+targets.map(d=>dayNames[d]).join(', '));
+            }catch(err){ setStatus('Copy failed: '+err); }
+          }
+        }
+      }, {once:true});
+    }
+
+    // Brush and toolbar
+    document.querySelectorAll('.level').forEach(b=>{
+      b.addEventListener('click', ()=>{ document.querySelectorAll('.level').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); brush = Number(b.dataset.level)||0; });
+    });
+    document.querySelector('.level[data-level="1"]').classList.add('selected');
+    document.getElementById('refresh').addEventListener('click', load);
+    document.getElementById('preset-5122').addEventListener('click', ()=>{
+      for(let d=0; d<7; d++){
+        const arr = Array(48).fill(0);
+        for(let h=5; h<22; h++){ arr[h*2]=1; arr[h*2+1]=1; }
+        days[d]=arr; dirty[d] = true;
+      }
+      render();
+    });
+
+    btnSchedule.addEventListener('click', onSchedule);
+    btnSaveSelected.addEventListener('click', onSaveSelected);
+    selAll.addEventListener('click', ()=>{ for(let d=0; d<7; d++){ const el=document.getElementById('sd_'+d); if(el) el.checked=true; } });
+    selWeekdays.addEventListener('click', ()=>{ for(let d=0; d<7; d++){ const el=document.getElementById('sd_'+d); if(el) el.checked = (d>=0 && d<=4); } });
+    selWeekends.addEventListener('click', ()=>{ for(let d=0; d<7; d++){ const el=document.getElementById('sd_'+d); if(el) el.checked = (d>=5); } });
+    selNone.addEventListener('click', ()=>{ for(let d=0; d<7; d++){ const el=document.getElementById('sd_'+d); if(el) el.checked=false; } });
+
+    load();
+  </script>
+</body>
+</html>

@@ -7,6 +7,10 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.service import async_set_service_schema
 from homeassistant.util.yaml import load_yaml
 from homeassistant.components.http import HomeAssistantView
+from homeassistant.components.frontend import (
+    async_register_built_in_panel,
+    async_remove_panel,
+)
 from aiohttp import web
 
 from .const import DOMAIN, DEFAULT_HOST, DEFAULT_PORT
@@ -103,12 +107,138 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
             hass.http.register_view(HeliosImageView())
             hass.data[DOMAIN][key] = True
+
+        # Register embedded calendar UI and API (no auth per user request)
+        ui_key = "_calendar_ui_registered"
+        api_key = "_calendar_api_registered"
+        if not hass.data[DOMAIN].get(ui_key):
+            class HeliosCalendarUiView(HomeAssistantView):
+                url = "/api/helios_pro_ventilation/calendar.html"
+                name = "api:helios_pro_ventilation:calendar_ui"
+                requires_auth = False
+
+                async def get(self, request):  # type: ignore[override]
+                    # Serve the external HTML file instead of embedding it here
+                    try:
+                        html_path = os.path.join(os.path.dirname(__file__), "calendar.html")
+                        if os.path.exists(html_path):
+                            return web.FileResponse(path=html_path)
+                        # Fallback: not found page
+                        return web.Response(text="<html><body><h3>calendar.html not found</h3></body></html>", content_type="text/html", status=404)
+                    except Exception as exc:
+                        return web.Response(text=f"Error serving calendar.html: {exc}", content_type="text/plain", status=500)
+
+            hass.http.register_view(HeliosCalendarUiView())
+            hass.data[DOMAIN][ui_key] = True
+
+        if not hass.data[DOMAIN].get(api_key):
+            # GET /calendar.json
+            class HeliosCalendarJson(HomeAssistantView):
+                url = "/api/helios_pro_ventilation/calendar.json"
+                name = "api:helios_pro_ventilation:calendar_json"
+                requires_auth = False
+
+                async def get(self, request):  # type: ignore[override]
+                    hass_local: HomeAssistant = request.app["hass"]  # type: ignore
+                    coord = None
+                    for d in hass_local.data.get(DOMAIN, {}).values():
+                        if isinstance(d, dict) and "coordinator" in d:
+                            coord = d["coordinator"]; break
+                    if coord is None:
+                        return web.json_response({"days": [None]*7, "meta": {"error": "no coordinator"}})
+                    days = []
+                    missing = []
+                    for i in range(7):
+                        v = coord.data.get(f"calendar_day_{i}")
+                        if not isinstance(v, list) or len(v) != 48:
+                            days.append(None); missing.append(i)
+                            try:
+                                coord.request_calendar_day(i)
+                            except Exception:
+                                pass
+                        else:
+                            days.append([int(x) for x in v])
+                    return web.json_response({"days": days, "meta": {"missing_days": missing}})
+
+            # POST /calendar/set
+            class HeliosCalendarSet(HomeAssistantView):
+                url = "/api/helios_pro_ventilation/calendar/set"
+                name = "api:helios_pro_ventilation:calendar_set"
+                requires_auth = False
+
+                async def post(self, request):  # type: ignore[override]
+                    hass_local: HomeAssistant = request.app["hass"]  # type: ignore
+                    coord = None
+                    for d in hass_local.data.get(DOMAIN, {}).values():
+                        if isinstance(d, dict) and "coordinator" in d:
+                            coord = d["coordinator"]; break
+                    if coord is None:
+                        return web.json_response({"ok": False, "error": "no coordinator"}, status=400)
+                    try:
+                        body = await request.json()
+                        day = int(body.get("day"))
+                        levels = list(body.get("levels"))
+                        if len(levels) != 48:
+                            return web.json_response({"ok": False, "error": "levels must have length 48"}, status=400)
+                        lv = [max(0, min(4, int(x))) for x in levels]
+                        coord.set_calendar_day(day, lv)
+                        try: coord.request_calendar_day(day)
+                        except Exception: pass
+                        return web.json_response({"ok": True})
+                    except Exception as exc:
+                        return web.json_response({"ok": False, "error": str(exc)}, status=400)
+
+            # POST /calendar/copy
+            class HeliosCalendarCopy(HomeAssistantView):
+                url = "/api/helios_pro_ventilation/calendar/copy"
+                name = "api:helios_pro_ventilation:calendar_copy"
+                requires_auth = False
+
+                async def post(self, request):  # type: ignore[override]
+                    hass_local: HomeAssistant = request.app["hass"]  # type: ignore
+                    coord = None
+                    for d in hass_local.data.get(DOMAIN, {}).values():
+                        if isinstance(d, dict) and "coordinator" in d:
+                            coord = d["coordinator"]; break
+                    if coord is None:
+                        return web.json_response({"ok": False, "error": "no coordinator"}, status=400)
+                    try:
+                        body = await request.json()
+                        src = int(body.get("source_day"))
+                        targets = [int(x) for x in (body.get("target_days") or [])]
+                        if not targets:
+                            return web.json_response({"ok": False, "error": "target_days required"}, status=400)
+                        coord.copy_calendar_day(src, targets)
+                        return web.json_response({"ok": True})
+                    except Exception as exc:
+                        return web.json_response({"ok": False, "error": str(exc)}, status=400)
+
+            hass.http.register_view(HeliosCalendarJson())
+            hass.http.register_view(HeliosCalendarSet())
+            hass.http.register_view(HeliosCalendarCopy())
+            hass.data[DOMAIN][api_key] = True
     except Exception as exc:
         _LOGGER.debug("Image HTTP view registration skipped: %s", exc)
 
+    # ----- Sidebar panel (iframe) for quick access to the calendar editor -----
+    try:
+        hass.data.setdefault(DOMAIN, {})
+        if not hass.data[DOMAIN].get("_panel_registered"):
+            async_register_built_in_panel(
+                hass,
+                component_name="iframe",
+                sidebar_title="Helios Calendar",
+                sidebar_icon="mdi:calendar-clock",
+                url_path="helios-calendar",
+                config={"url": "/api/helios_pro_ventilation/calendar.html"},
+                require_admin=False,
+            )
+            hass.data[DOMAIN]["_panel_registered"] = True
+    except Exception as exc:
+        _LOGGER.debug("Sidebar panel registration skipped: %s", exc)
+
     # ----- Services (register once) -----
     if not hass.services.has_service(DOMAIN, "set_fan_level"):
-        import voluptuous as vol
         SERVICE_SET_AUTO_MODE_SCHEMA = vol.Schema({ vol.Optional("enabled", default=True): cv.boolean })
         SERVICE_SET_FAN_LEVEL_SCHEMA = vol.Schema({ vol.Required("level"): vol.All(vol.Coerce(int), vol.Range(min=0, max=4)) })
         SERVICE_SET_PARTY_ENABLED_SCHEMA = vol.Schema({ vol.Optional("enabled", default=True): cv.boolean })
@@ -217,4 +347,17 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     data = hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
     if data:
         data["stop_event"].set()
+    # If no coordinator entries remain, remove the sidebar panel
+    try:
+        has_any_entry = False
+        for v in hass.data.get(DOMAIN, {}).values():
+            if isinstance(v, dict) and "coordinator" in v:
+                has_any_entry = True
+                break
+        if not has_any_entry:
+            async_remove_panel(hass, "helios-calendar")
+            if DOMAIN in hass.data:
+                hass.data[DOMAIN].pop("_panel_registered", None)
+    except Exception:
+        pass
     return unloaded
