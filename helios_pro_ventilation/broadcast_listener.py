@@ -27,9 +27,16 @@ class HeliosBroadcastReader(threading.Thread):
             try:
                 if not self.sock:
                     _LOGGER.info("Connecting to Helios bridge %s:%d", self.host, self.port)
-                    self.sock = socket.create_connection((self.host, self.port), timeout=5)
-                    self.sock.settimeout(1)
-                    _LOGGER.info("Connected to Helios bridge")
+                    try:
+                        # Use a shorter dial timeout for snappier retries during startup
+                        self.sock = socket.create_connection((self.host, self.port), timeout=2)
+                        self.sock.settimeout(1)
+                        _LOGGER.info("Connected to Helios bridge")
+                    except Exception as ce:
+                        # Connection failed quickly; brief backoff and retry without treating as a read error
+                        _LOGGER.warning("Connect failed to %s:%d: %s — retrying in 1s", self.host, self.port, ce)
+                        time.sleep(1)
+                        continue
 
                 chunk = self.sock.recv(256)
                 if not chunk:
@@ -178,7 +185,7 @@ class HeliosBroadcastReader(threading.Thread):
                 self.coord.tick()
                 continue
             except Exception as e:
-                _LOGGER.warning("Read error: %s", e)
+                _LOGGER.warning("Read error: %s — reconnect in 3s", e)
                 time.sleep(3)
                 if self.sock:
                     try:
