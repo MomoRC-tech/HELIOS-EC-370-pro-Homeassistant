@@ -11,6 +11,7 @@ Full documentation: see `helios_pro_ventilation/documentation.md`.
 ## Table of Contents
 
 - [Features](#features)
+- [Supported Hardware](#supported-hardware)
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Entities](#entities)
@@ -30,6 +31,46 @@ Full documentation: see `helios_pro_ventilation/documentation.md`.
 - Temperature sensors (outdoor, extract, exhaust, supply)
 - Filter warning as a diagnostic binary sensor
 - Debug: one‑shot scan over Helios variables with a single INFO summary + file exports
+
+---
+
+## Supported Hardware
+
+This integration has been verified to work with the following hardware setups for bridging Home Assistant to the Helios EC‑Pro RS‑485 bus:
+
+### 1. Waveshare RS485-to-Ethernet Module (Tested & Recommended)
+
+- **Model:** Waveshare RS485 TO ETH (commonly available module)
+- **Setup:**  
+  - Connects directly to the Helios EC‑Pro RS‑485 bus.
+  - Configured in TCP Server mode.
+  - Use 9600 baud, 8 data bits, no parity, 1 stop bit (8N1).
+  - Default IP/Port: `192.168.0.51:8234` (can be customized).
+- **Status:**  
+  - **Fully tested and stable.**
+  - Recommended for most users seeking a reliable, plug-and-play solution.
+
+### 2. DIY: ESP32 with RS485 Transceiver (Advanced, Community-Supported)
+
+- **Hardware:**  
+  - ESP32 development board.
+  - RS485 transceiver module (e.g., MAX485 or similar).
+- **Setup:**  
+  - ESP32 runs custom firmware to act as a transparent TCP server bridging RS485 and Ethernet/WiFi.
+  - Bridges all data between the Helios bus and network.
+  - Must match Helios requirements: 9600 baud, 8N1.
+  - Exposes a TCP socket on a configurable port and IP.
+- **Firmware:**  
+  - Many open-source examples exist (e.g., Espressif or Arduino-based transparent serial bridge projects).
+  - Community support and DIY documentation may vary.
+- **Status:**  
+  - **Experimental but functional.**
+  - Allows for wireless or custom integration, suitable for advanced users.
+
+### Notes
+
+- **Both solutions must operate as a transparent TCP bridge** (no protocol translation, just raw RS485-to-TCP tunneling).
+- The integration expects to connect to a TCP socket that directly exposes the Helios EC‑Pro RS‑485 protocol.
 
 ---
 
