@@ -4,6 +4,7 @@
 - UX: Removed unit label "level" from all level-type entities so Home Assistant no longer shows a unit after values.
   - Affected: fan_level, min_fan_level, party_level, zuluft_level, abluft_level, quiet_level.
   - Note: If you still see a unit in the UI, restart Home Assistant and ensure the entity has no custom unit override in the registry.
+ - Feature: New switch "Lüftung EIN/AUS (Stufe 1)" to toggle ventilation between OFF and manual level 1 — ideal for Android Companion entity widget.
 
 ## 4.0.0 — 2025-10-11
 - Major release: UX/docs polish and cleanups
