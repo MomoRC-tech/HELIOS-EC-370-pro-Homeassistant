@@ -38,3 +38,42 @@ set_party_enabled:
       default: true
       selector:
         boolean:
+
+calendar_request_day:
+  name: Request calendar (day)
+  description: Queue a read of the weekly calendar for a specific day (0=Mon..6=Sun).
+  fields:
+    day:
+      name: Day
+      description: 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun
+      required: true
+      example: 4
+      selector:
+        number:
+          min: 0
+          max: 6
+          mode: slider
+          step: 1
+
+calendar_set_day:
+  name: Set calendar (day)
+  description: Write the weekly calendar for a specific day using 48 half-hour levels (0..4). Uses extended write format.
+  fields:
+    day:
+      name: Day
+      description: 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun
+      required: true
+      example: 6
+      selector:
+        number:
+          min: 0
+          max: 6
+          mode: slider
+          step: 1
+    levels:
+      name: Levels (48 values)
+      description: 48 integers (0..4) for 30-minute slots starting at 00:00 (00–29, 30–59) repeated for each hour.
+      required: true
+      example: [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]
+      selector:
+        object:
