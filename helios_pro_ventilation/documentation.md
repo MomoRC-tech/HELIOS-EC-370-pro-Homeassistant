@@ -93,6 +93,7 @@ The integration will automatically reload with the new connection settings. All 
 - Native Fan entity (percentage and presets)
 - Fan level Select entity (0..4)
 - Services to set auto mode, fan level, and party mode
+ - Calendar: read/write a day (48 half-hour slots) and copy-day convenience service
 - Diagnostic one‑shot “variable scan” with logs and file exports
 
 ## 7. Home Assistant interface
@@ -112,8 +113,17 @@ Services
 - `helios_pro_ventilation.set_auto_mode` — enabled: boolean
 - `helios_pro_ventilation.set_fan_level` — level: 0..4
 - `helios_pro_ventilation.set_party_enabled` — enabled: boolean (write Var 0x0F; state confirmed via Var 0x10)
+ - `helios_pro_ventilation.calendar_request_day` — day: 0..6 (Mon..Sun)
+ - `helios_pro_ventilation.calendar_set_day` — day: 0..6, levels: exactly 48 integers 0..4 (30-min slots starting at 00:00)
+	 - UI uses an object selector; enter levels as a JSON array, e.g., `[0,1,1,2,...]`.
+	 - Validation requires exactly 48 items and each in range 0..4.
+ - `helios_pro_ventilation.calendar_copy_day` — source_day: 0..6; preset: none|weekday; all_days: bool; target_days: [0..6]
+	 - `preset=weekday` copies to Tue–Fri. If `all_days=true`, copies to Mon–Sun and ignores `target_days`.
+	 - If the source day is not loaded yet, the service queues a read and skips copying.
 
 Entity picture (optional)
+Diagnostic sensors (calendar)
+- Seven diagnostic text sensors (“Kalender Montag … Sonntag”) expose the raw 48-slot arrays stored in `coordinator.data` as text. They’re disabled by default and useful for visibility/testing schedules.
 - Place `MomoRC_HELIOS_HASS.png` (or `helios_ec_pro.png`) either in your HA config at `www/` (served as `/local/...`) or in the integration folder at `custom_components/helios_pro_ventilation/` (served as `/api/helios_pro_ventilation/image.png`). The Climate and Fan entities will detect and display it automatically.
 
 ## 8. Operation details
@@ -127,6 +137,7 @@ Polling strategy
 - Bypass 2 temperature (Var 0x60): hourly (treated as integer °C).
 - Hourly housekeeping: ext_contact, hours_on, party/zuluft/abluft levels, bypass1/frostschutz temps, date/time, fan stage voltages, etc.
 - Startup one‑time reads: software version, min fan level, filter change months, nachlaufzeit.
+ - Calendar: after the first bus ping, a paced one-time read for all 7 days is queued to populate calendar sensors/services safely.
 
 Party semantics
 - Enable/disable party via Var 0x0F (write‑only). The actual active state is reflected by Var 0x10 (>0 minutes remaining). The integration exposes a `set_party_enabled` service and a derived `party_enabled` binary sensor.
@@ -175,6 +186,7 @@ Repository layout
 Testing
 - Run the parser tests with pytest in your dev environment.
 - For HA runtime tests, place the component under `custom_components/` and reload the integration.
+ - Calendar pack/unpack tests verify the nibble encoding; frame tests assert the extended write frame bytes and checksum.
 
 Contributions
 - PRs are welcome for additional variables/entities, refined parsing, or improved diagnostics.

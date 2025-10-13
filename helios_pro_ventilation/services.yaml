@@ -72,8 +72,67 @@ calendar_set_day:
           step: 1
     levels:
       name: Levels (48 values)
-      description: 48 integers (0..4) for 30-minute slots starting at 00:00 (00–29, 30–59) repeated for each hour.
+      description: 48 integers (0..4) for 30-minute slots starting at 00:00 (00–29, 30–59) repeated for each hour. Enter as JSON array (exactly 48 items; each 0..4), e.g., [0,1,1,2,...].
       required: true
       example: [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]
       selector:
         object:
+
+calendar_copy_day:
+  name: Copy calendar day → days
+  description: Copy one day's 48-slot levels to one or more target days (0=Mon..6=Sun). If the source isn't loaded yet, a read is queued and no copy occurs.
+  fields:
+    source_day:
+    preset:
+      name: Preset
+      description: Optional preset to choose typical targets. 'weekday' copies to Tue–Fri.
+      required: false
+      default: none
+      selector:
+        select:
+          options:
+            - label: none
+              value: none
+            - label: weekday (Tue–Fri)
+              value: weekday
+      name: Source day
+      description: 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun
+      required: true
+      example: 0
+      selector:
+        number:
+          min: 0
+          max: 6
+          mode: slider
+          step: 1
+    all_days:
+      name: All days (Mon–Sun)
+      description: If enabled, copies to all days and ignores the explicit Target days selection.
+      required: false
+      default: false
+      selector:
+        boolean:
+    target_days:
+      name: Target days
+      description: Choose one or more days to overwrite (ignored if 'All days' is enabled).
+      required: true
+      example: [1,2,3,4]
+      selector:
+        select:
+          multiple: true
+          mode: list
+          options:
+            - label: Monday (0)
+              value: 0
+            - label: Tuesday (1)
+              value: 1
+            - label: Wednesday (2)
+              value: 2
+            - label: Thursday (3)
+              value: 3
+            - label: Friday (4)
+              value: 4
+            - label: Saturday (5)
+              value: 5
+            - label: Sunday (6)
+              value: 6

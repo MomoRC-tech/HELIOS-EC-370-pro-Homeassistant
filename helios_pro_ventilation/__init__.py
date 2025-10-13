@@ -114,7 +114,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         SERVICE_CALENDAR_REQUEST_SCHEMA = vol.Schema({ vol.Required("day"): vol.All(vol.Coerce(int), vol.Range(min=0, max=6)) })
         SERVICE_CALENDAR_SET_SCHEMA = vol.Schema({
             vol.Required("day"): vol.All(vol.Coerce(int), vol.Range(min=0, max=6)),
-            vol.Required("levels"): vol.All(list, vol.Length(min=48, max=48)),
+            vol.Required("levels"): vol.All(
+                [vol.All(vol.Coerce(int), vol.Range(min=0, max=4))],
+                vol.Length(min=48, max=48)
+            ),
+        })
+        SERVICE_CALENDAR_COPY_SCHEMA = vol.Schema({
+            vol.Required("source_day"): vol.All(vol.Coerce(int), vol.Range(min=0, max=6)),
+            vol.Optional("all_days", default=False): cv.boolean,
+            vol.Optional("preset", default="none"): vol.In(["none", "weekday"]),
+            vol.Optional("target_days", default=[]): [vol.All(vol.Coerce(int), vol.Range(min=0, max=6))],
         })
 
         async def handle_set_auto_mode(call):
@@ -145,11 +154,34 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         async def handle_calendar_set(call):
             day = int(call.data.get("day"))
             levels = list(call.data.get("levels"))
+            # Friendly validation at runtime
+            if len(levels) != 48:
+                raise ValueError("levels must contain exactly 48 integers (0..4)")
+            bad = [v for v in levels if not isinstance(v, (int,)) or v < 0 or v > 4]
+            if bad:
+                raise ValueError("levels values must be integers in range 0..4")
             for d in hass.data.get(DOMAIN, {}).values():
                 d["coordinator"].set_calendar_day(day, levels)
 
         hass.services.async_register(DOMAIN, "calendar_request_day", handle_calendar_request, schema=SERVICE_CALENDAR_REQUEST_SCHEMA)
         hass.services.async_register(DOMAIN, "calendar_set_day", handle_calendar_set, schema=SERVICE_CALENDAR_SET_SCHEMA)
+        
+        async def handle_calendar_copy(call):
+            src = int(call.data.get("source_day"))
+            all_days = bool(call.data.get("all_days", False))
+            preset = str(call.data.get("preset", "none"))
+            targets = list(call.data.get("target_days", []))
+            if preset == "weekday":
+                # Mon -> Tue..Fri
+                targets = [1, 2, 3, 4]
+            elif all_days:
+                targets = [0, 1, 2, 3, 4, 5, 6]
+            for d in hass.data.get(DOMAIN, {}).values():
+                coord = d["coordinator"]
+                if hasattr(coord, "copy_calendar_day"):
+                    coord.copy_calendar_day(src, targets)
+
+        hass.services.async_register(DOMAIN, "calendar_copy_day", handle_calendar_copy, schema=SERVICE_CALENDAR_COPY_SCHEMA)
 
         # bind services.yaml so the Integration tile shows service descriptions
         try:
@@ -161,7 +193,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         except Exception:  # fine if it’s missing
             pass
 
-    _LOGGER.info("✅ Helios services ready: set_auto_mode, set_fan_level, set_party_enabled, calendar_request_day, calendar_set_day")
+    _LOGGER.info("✅ Helios services ready: set_auto_mode, set_fan_level, set_party_enabled, calendar_request_day, calendar_set_day, calendar_copy_day")
 
     # Register options update listener to reload the integration when options change
     entry.async_on_unload(entry.add_update_listener(async_options_update_listener))

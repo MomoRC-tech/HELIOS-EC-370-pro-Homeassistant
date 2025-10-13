@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.5.0 — 2025-10-13
+- Calendar:
+	- New `calendar_copy_day` presets: `weekday` (Mon → Tue–Fri) and `all_days` toggle to copy to Mon–Sun.
+	- Validation improvements for `calendar_set_day`: require exactly 48 integers, each in 0..4.
+	- Diagnostic sensors: added seven disabled-by-default sensors (Kalender Montag … Sonntag) to expose stored 48-slot arrays for visibility.
+	- Docs: README and full docs updated with examples and details.
+
 ## 4.4.1 — 2025-10-13
 - Perf: Faster startup retries when the bridge isn’t reachable — 2s connect timeout and 1s backoff on connect failure; clearer logs.
 

@@ -77,6 +77,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         HeliosTextSensor(coord, "date_str", "Datum (Gerät)", entry),
         HeliosTextSensor(coord, "time_str", "Uhrzeit (Gerät)", entry),
     ]
+    # Diagnostic sensors for calendar day visibility (disabled by default)
+    day_names = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
+    for i, name in enumerate(day_names):
+        key = f"calendar_day_{i}"
+        s = HeliosTextSensor(coord, key, f"Kalender {name}", entry)
+        try:
+            from homeassistant.helpers.entity import EntityCategory
+            s._attr_entity_category = EntityCategory.DIAGNOSTIC
+            s._attr_entity_registry_enabled_default = False
+        except Exception:
+            pass
+        entities.append(s)
     async_add_entities(entities)
     for e in entities:
         coord.register_entity(e)

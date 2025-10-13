@@ -31,6 +31,8 @@ Full documentation: see `helios_pro_ventilation/documentation.md`.
 - Temperature sensors (outdoor, extract, exhaust, supply)
 - Filter warning as a diagnostic binary sensor
 - Debug: one‑shot scan over Helios variables with a single INFO summary + file exports
+ - Weekly calendar read/write services with packing of 48 half-hour levels per day
+ - Copy-day service to duplicate schedules (Mon → Tue–Fri or all days)
 
 ---
 
@@ -138,7 +140,12 @@ The integration will automatically reload with the new settings.
   - Nachlaufzeit (Sekunden) (Var 0x49)
   - Software Version (Var 0x48)
   - Datum / Uhrzeit (Var 0x07 / 0x08)
-- Switch: Debug, one‑shot variable scan (stable id: `switch.helios_ec_pro_variablen_scan_debug`)
+- Switches:
+  - Debug, one‑shot variable scan (stable id: `switch.helios_ec_pro_variablen_scan_debug`)
+  - Lüftung EIN/AUS (Stufe 1): simple ON/OFF for manual level 1 vs level 0 (for widgets)
+
+- Diagnostic sensors (disabled by default):
+  - Kalender Montag … Sonntag — expose raw 48-slot arrays as JSON-like text for visibility
 
 ---
 
@@ -168,6 +175,12 @@ logger:
 - `set_auto_mode` (enabled: boolean)
 - `set_fan_level` (level: 0–4)
 - `set_party_enabled` (enabled: boolean)
+- `calendar_request_day` (day: 0..6)
+- `calendar_set_day` (day: 0..6, levels: exactly 48 integers 0..4)
+  - Tip: Enter the levels as a JSON array in the UI (object selector), e.g. `[0,1,1,2,...]`.
+- `calendar_copy_day` (source_day: 0..6, preset: none|weekday, all_days: bool, target_days: [0..6])
+  - If `preset=weekday`, copies to Tue–Fri; if `all_days=true`, copies to Mon–Sun and ignores `target_days`.
+  - If the source calendar isn’t loaded yet, the integration queues a read and skips copying (try again afterward).
 
 ---
 

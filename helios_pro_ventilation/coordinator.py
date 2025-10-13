@@ -184,3 +184,48 @@ class HeliosCoordinatorWithQueue(HeliosCoordinator):
         frame = self._build_calendar_write_extended(var, levels48)
         self.queue_frame(frame)
         _LOGGER.info("HeliosPro: queued calendar write for day %d → %s", day, frame.hex(" "))
+
+    def copy_calendar_day(self, source_day: int, target_days: list[int]):
+        """Copy the calendar from source_day to each day in target_days.
+
+        - source_day: int 0=Mon..6=Sun
+        - target_days: list[int] of days 0..6
+
+        Reads levels from coordinator.data['calendar_day_{source_day}'].
+        If missing, it will queue a read for the source and log a warning.
+        """
+        try:
+            s = max(0, min(6, int(source_day)))
+        except Exception:
+            raise ValueError("source_day must be 0..6")
+        if not isinstance(target_days, list) or not target_days:
+            raise ValueError("target_days must be a non-empty list of 0..6")
+
+        levels = self.data.get(f"calendar_day_{s}")
+        if not isinstance(levels, list) or len(levels) != 48:
+            _LOGGER.warning(
+                "HeliosPro: calendar_day_%d not available (len=%s); queuing a read and aborting copy",
+                s,
+                (len(levels) if isinstance(levels, list) else None),
+            )
+            # Ensure we fetch it soon
+            self.request_calendar_day(s)
+            return
+
+        # Normalize and unique target list
+        ts: list[int] = []
+        seen = set()
+        for t in target_days:
+            try:
+                ti = max(0, min(6, int(t)))
+            except Exception:
+                continue
+            if ti in seen:
+                continue
+            seen.add(ti)
+            ts.append(ti)
+
+        for t in ts:
+            self.set_calendar_day(t, list(levels))
+            # Optionally queue a read-back to refresh UI/state
+            self.request_calendar_day(t)
