@@ -3,6 +3,9 @@
 ## 4.5.1 — 2025-10-13
 - Fix: Service handlers now guard DOMAIN data entries without a coordinator (e.g., image registration flag). This resolves an error using `calendar_request_day` where a boolean was treated as a dict ("TypeError: 'bool' object is not subscriptable").
 
+## 4.5.2 — 2025-10-13
+- Fix: Diagnostic calendar text sensors now JSON‑encode list/dict values before exposing state, so Home Assistant treats them as valid text instead of marking them unavailable. This makes “Kalender Montag … Sonntag” visible after calendar reads.
+
 ## 4.5.0 — 2025-10-13
 - Calendar:
 	- New `calendar_copy_day` presets: `weekday` (Mon → Tue–Fri) and `all_days` toggle to copy to Mon–Sun.
