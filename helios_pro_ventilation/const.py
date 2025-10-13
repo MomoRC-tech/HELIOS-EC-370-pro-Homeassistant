@@ -77,8 +77,9 @@ class HeliosVar(IntEnum):
     Var_23_weekoffs_temp    = (0x23, 8, 1, "°C", True, 1.0, "rw", "8-bit (°C)")
 
     # Fan level and related
-    Var_35_fan_level        = (0x35, 8, 1, "level", False, 1.0, "ro", "8-bit (0..4) — READ ONLY")
-    Var_37_min_fan_level    = (0x37, 8, 1, "level", False, 1.0, "rw", "8-bit (0..4)")
+    # Remove unit label for level-type values to avoid showing "level" in HA UI
+    Var_35_fan_level        = (0x35, 8, 1, None, False, 1.0, "ro", "8-bit (0..4) — READ ONLY")
+    Var_37_min_fan_level    = (0x37, 8, 1, None, False, 1.0, "rw", "8-bit (0..4)")
     Var_38_change_filter    = (0x38, 8, 1, "months", False, 1.0, "rw", "8-bit (months)")
 
     # Sensors
@@ -92,11 +93,11 @@ class HeliosVar(IntEnum):
     Var_41_unknown          = (0x41, 8, 1, None, False, 1.0, "rw", "8-bit 0x0A")
 
     # Party / fan balancing
-    Var_42_party_level      = (0x42, 8, 1, "level", False, 1.0, "rw", "8-bit (fan level)")
+    Var_42_party_level      = (0x42, 8, 1, None, False, 1.0, "rw", "8-bit (fan level)")
     Var_43_unknown          = (0x43, 8, 1, None, False, 1.0, "rw", "8-bit 0x00")
     Var_44_unknown          = (0x44, 8, 1, None, False, 1.0, "rw", "8-bit 0x00")
-    Var_45_zuluft_level     = (0x45, 8, 1, "level", False, 1.0, "rw", "8-bit 0x02")
-    Var_46_abluft_level     = (0x46, 8, 1, "level", False, 1.0, "rw", "8-bit 0x03")
+    Var_45_zuluft_level     = (0x45, 8, 1, None, False, 1.0, "rw", "8-bit 0x02")
+    Var_46_abluft_level     = (0x46, 8, 1, None, False, 1.0, "rw", "8-bit 0x03")
     Var_47_unknown          = (0x47, 8, 1, None, False, 1.0, "rw", "8-bit 0x00")
 
     # Version / timers
@@ -118,7 +119,7 @@ class HeliosVar(IntEnum):
     Var_54_quiet_curr_time  = (0x54, 16, 1, "min", False, 1.0, "rw", "16-bit (minutes, current)")
     Var_55_quiet_enabled    = (0x55, 8, 1, None, False, 1.0, "wo", "8-bit (write-only: 0=disabled, 1=enabled)")
     Var_56_quiet_time       = (0x56, 8, 1, "min", False, 1.0, "rw", "8-bit (minutes)")
-    Var_57_quiet_level      = (0x57, 8, 1, "level", False, 1.0, "rw", "8-bit (fan level)")
+    Var_57_quiet_level      = (0x57, 8, 1, None, False, 1.0, "rw", "8-bit (fan level)")
 
     # Large blocks (unknown purpose)
     Var_58_unknown          = (0x58, 8, 26, None, False, 1.0, "rw", "26 × 8-bit 0x00 0x00 …")

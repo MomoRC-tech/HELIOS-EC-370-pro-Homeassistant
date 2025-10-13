@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.3.0 — 2025-10-13
+- UX: Removed unit label "level" from all level-type entities so Home Assistant no longer shows a unit after values.
+  - Affected: fan_level, min_fan_level, party_level, zuluft_level, abluft_level, quiet_level.
+  - Note: If you still see a unit in the UI, restart Home Assistant and ensure the entity has no custom unit override in the registry.
+
 ## 4.0.0 — 2025-10-11
 - Major release: UX/docs polish and cleanups
 	- Climate/Fan entity pictures standardized to the integration endpoint `/api/helios_pro_ventilation/image.png` (public; serves `config/www` image if present or falls back to packaged image/transparent PNG).
