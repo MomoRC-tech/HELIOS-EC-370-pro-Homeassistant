@@ -73,6 +73,18 @@ helios_pro_ventilation:
 
 The integration creates a config entry in the UI and starts background threads for IO and scheduling.
 
+### Changing Host and Port After Setup
+
+The integration supports reconfiguring the TCP bridge host and port after initial setup:
+
+1. Navigate to Settings → Devices & Services in the Home Assistant UI
+2. Locate the "Helios EC‑Pro Ventilation" integration
+3. Click the "Configure" button (gear/cog icon)
+4. Update the host and/or port fields as needed
+5. Click "Submit" to apply the changes
+
+The integration will automatically reload with the new connection settings. All entities will reconnect to the updated host and port without requiring a full Home Assistant restart.
+
 ## 6. Features
 
 - Local push updates from the RS‑485 bus

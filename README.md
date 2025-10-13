@@ -100,6 +100,18 @@ helios_pro_ventilation:
 
 It then creates a config entry in the UI for ongoing management.
 
+### Changing Host and Port After Setup
+
+You can change the host and port after initial setup directly in the Home Assistant UI:
+
+1. Go to Settings → Devices & Services
+2. Find the "Helios EC‑Pro Ventilation" integration
+3. Click on "Configure" (gear icon)
+4. Update the host and/or port values
+5. Click "Submit"
+
+The integration will automatically reload with the new settings.
+
 ---
 
 ## Entities
