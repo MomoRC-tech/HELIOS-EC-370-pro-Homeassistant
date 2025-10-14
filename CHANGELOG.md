@@ -5,6 +5,7 @@ Patch release
 - New sensors: device_clock_drift_min, device_clock_in_sync, device_date_time_state
 - Faster date/time availability after startup (30s retry until present)
 - Calendar UI: clock/status caption in toolbar
+ - New diagnostic: RS‑485 stream logger switch to capture raw RX/TX frames to a file (auto‑off after 15 minutes); README and docs updated
 
 ## 5.1.0
 
@@ -13,6 +14,21 @@ Enhancements
 - New sensors: `device_clock_drift_min` (diagnostic), `device_clock_in_sync` (diagnostic), and `device_date_time_state` (text).
 - Faster startup for date/time: retry reads every 30s until values available.
 - Calendar UI: shows a compact clock/status caption (state, date/time, drift, sync) in the toolbar.
+ - RS‑485 stream logger: switched to HTML output with color coding and end‑of‑file statistics (counts and min/avg/max intervals). File path now ends with `.html`.
+
+## 5.2.0 — 2025-10-14
+
+Enhancements
+- RS‑485 stream logger UX improvements:
+	- Direction arrows added in the Dir column (← RX, → TX).
+	- Color legend added above the table explaining Broadcast/Known/Unknown/Garbage/Ping/TX and the garbage context key.
+	- TX known/unknown frames styled with dark blue background and light blue text to distinguish outgoing frames quickly.
+	- Timestamps styled (dark magenta) with added spacing for readability.
+	- Consistent tag spacing after leading tokens like “ping ok”, “broadcast ok”, “request ok”, etc.
+	- Garbage rows now include the previous valid frame bytes (green) before garbage bytes (red) for better context.
+
+Docs
+- README and full documentation updated to reflect HTML format details, colors, statistics, and the logger UX improvements.
 
 Docs
 - README and full docs updated for time sync services, options, sensors, and the UI caption.

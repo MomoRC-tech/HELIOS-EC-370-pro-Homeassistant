@@ -16,6 +16,8 @@ Full documentation: see `helios_pro_ventilation/documentation.md`.
 - [Configuration](#configuration)
 - [Entities](#entities)
 - [Debug: One-shot var scan](#debug-one-shot-var-scan)
+ - [Debug: RS-485 stream logger](#debug-rs-485-stream-logger)
+- [Protocol basics (generic)](#protocol-basics-generic)
 - [Services](#services)
 - [Troubleshooting](#troubleshooting)
 - [Development](#development)
@@ -32,6 +34,7 @@ Full documentation: see `helios_pro_ventilation/documentation.md`.
 - Temperature sensors (outdoor, extract, exhaust, supply)
 - Filter warning as a diagnostic binary sensor
 - Debug: one‑shot scan over Helios variables with a single INFO summary + file exports
+- Debug: RS‑485 stream logger switch to capture raw RX/TX frames to an HTML file with color coding and end‑of‑file statistics (auto‑off after 15 minutes)
  - Weekly calendar read/write services with packing of 48 half-hour levels per day
  - Copy-day service to duplicate schedules (Mon → Tue–Fri or all days)
  - Embedded calendar editor UI (sidebar + direct URL) with range scheduler
@@ -146,6 +149,7 @@ The integration will automatically reload with the new settings.
 - Switches:
   - Debug, one‑shot variable scan (stable id: `switch.helios_ec_pro_variablen_scan_debug`)
   - Lüftung EIN/AUS (Stufe 1): simple ON/OFF for manual level 1 vs level 0 (for widgets)
+  - RS‑485 Logger (diagnostic): captures raw RS‑485 RX/TX traffic to a timestamped file; turns off automatically after 15 minutes
 
 - Diagnostic sensors (disabled by default):
   - Kalender Montag … Sonntag — expose raw 48-slot arrays as JSON-like text for visibility
@@ -171,6 +175,66 @@ logger:
   logs:
     custom_components.helios_pro_ventilation: info  # or "debug" for more detail
 ```
+
+---
+
+## Debug: RS‑485 stream logger
+
+The integration includes a diagnostic switch to capture the raw RS‑485 byte stream (both RX and TX) to a file without affecting normal operation.
+
+- Entity: “RS‑485 Logger” (diagnostic; disabled by default in the registry)
+- How it works:
+  - When turned on, all incoming and outgoing bytes are tapped and fed to a parallel parser.
+  - The parser detects and marks:
+    - Valid generic frames ([addr, cmd, plen, var, payload, chk])
+    - Broadcast frames (0xFF 0xFF …)
+    - Pings (4‑byte sync)
+    - Any unmatched bytes as “garbage”
+  - Known variable IDs are resolved using the HeliosVar map and values are decoded using the same metadata (width/scale), appended as labels like “ID 0x16 (Var_16_fan_1_voltage) values=[…]”.
+- Auto‑off: If left on, the switch automatically turns off after 15 minutes.
+- Log location and format:
+  - A timestamped HTML file is created in your HA config directory, e.g. `<config>/helios_rs485_YYYYMMDD-HHMMSS.html`.
+  - Open it in a browser to see a color‑coded table:
+    - Broadcast and known frames are shown in green tones
+    - Unknown frames and garbage are shown in red tones
+    - Pings are shown in gray
+  - The file ends with a "Summary" section listing counts and min/avg/max inter‑arrival intervals for pings, broadcasts, and frames, plus total garbage bytes.
+  - Tip: You can also open the file as plain text if needed.
+
+Note: This logger is passive and has minimal overhead. When the switch is off, there is no impact on the integration.
+
+---
+
+## Protocol basics (generic)
+
+This integration talks the simple Helios EC‑Pro RS‑485 protocol. A quick reference:
+
+- Checksum
+  - For all frames, the last byte is a checksum: chk = (sum(all previous bytes) + 1) & 0xFF.
+
+- Generic variable frames (read/write)
+  - Layout: [addr, cmd, plen, var, payload..., chk]
+    - addr: our client address (0x11 by default)
+    - cmd: 0x00 = read, 0x01 = write
+    - plen: number of bytes that follow (var + payload)
+    - var: variable index (see HeliosVar in const.py)
+    - payload: optional data bytes (for write or response)
+  - Read request (no payload): [0x11, 0x00, 0x01, var, chk]
+  - Write request (N data bytes): [0x11, 0x01, 1+N, var, data×N, chk]
+  - Responses from the device use the same header shape and checksum.
+  - Multi‑byte values are little‑endian; signed/scale come from the variable metadata. Example: Var_3A temperatures are 10 × 16‑bit signed with scale 0.1 °C.
+
+- Broadcast frames
+  - Layout: [0xFF, 0xFF, plen, payload..., chk]
+  - Carry current fan level, auto flag, filter warning, etc.; emitted periodically by the bus.
+
+- Bus ping
+  - 4‑byte pattern: [b0, 0x00, 0x00, chk]
+  - A short “send slot” (~80 ms) opens after a ping; this integration queues writes to send during that window.
+
+Example (read Var_3A):
+- Request: [0x11, 0x00, 0x01, 0x3A, chk]
+- The checksum is computed from the first 4 bytes: chk = (0x11 + 0x00 + 0x01 + 0x3A + 1) & 0xFF.
 
 ---
 
@@ -202,6 +266,7 @@ Sensor
 - If entities don’t update, verify the bridge connection and check logs for missing pings.
 - If write commands don’t take effect, ensure the bus’s ping window is being detected (send slot opens ~80 ms after ping).
 - Clear `__pycache__` and reload the custom component if you’ve updated files but see old behavior.
+ - Where to find the RS‑485 HTML log (HA OS): Files are written under your Home Assistant `/config` directory. Use the File Editor add‑on or Samba share to open `helios_rs485_YYYYMMDD-HHMMSS.html` directly in a browser.
 
 ---
 

@@ -30,6 +30,7 @@ except Exception:  # pragma: no cover - fallback for local editors/tests
 
 from .const import DOMAIN
 from .debug_scanner import HeliosDebugScanner
+from .debug.rs485_logger import Rs485Logger
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     entities: list[SwitchEntity] = [
         HeliosDebugScanSwitch(coord, entry.entry_id),
         HeliosFanLevel1ToggleSwitch(coord, entry),
+        HeliosRs485LoggerSwitch(coord, entry),
     ]
     async_add_entities(entities)
 
@@ -209,3 +211,104 @@ class HeliosFanLevel1ToggleSwitch(SwitchEntity):
         except Exception as exc:
             _LOGGER.warning("Helios toggle: failed to turn off (level 0): %s", exc)
         self.async_write_ha_state()
+
+
+class HeliosRs485LoggerSwitch(SwitchEntity):
+    """Switch to enable RS-485 raw stream logging with auto-off after 15 minutes."""
+
+    _attr_has_entity_name = True
+
+    def __init__(self, coordinator: Any, entry: Any) -> None:
+        self._coord = coordinator
+        self._entry = entry
+        self._is_on = False
+        self._logger: Rs485Logger | None = None
+        self._timer_remove = None
+        try:
+            self._attr_device_info = DeviceInfo(
+                identifiers={(DOMAIN, entry.entry_id)},
+                name="Helios EC-Pro",
+                manufacturer="Helios",
+                model="EC-Pro",
+            )
+            self._attr_unique_id = f"{entry.entry_id}-rs485-logger"
+            self._attr_entity_category = EntityCategory.DIAGNOSTIC
+            self._attr_entity_registry_enabled_default = False
+        except Exception:
+            pass
+        self._path: str | None = None
+
+    @property
+    def name(self) -> str:
+        return "RS-485 Logger"
+
+    @property
+    def icon(self) -> str | None:
+        return "mdi:serial-port"
+
+    @property
+    def is_on(self) -> bool:
+        return self._is_on
+
+    @property
+    def extra_state_attributes(self) -> dict | None:
+        attrs: dict[str, Any] = {}
+        if self._path:
+            attrs["log_file"] = self._path
+        return attrs
+
+    async def async_added_to_hass(self) -> None:
+        try:
+            if hasattr(self._coord, "register_entity"):
+                self._coord.register_entity(self)
+        except Exception:
+            pass
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        if self._is_on:
+            return
+        try:
+            # Create logger and start
+            self._logger = Rs485Logger(getattr(self._coord, "hass", None))
+            path = self._logger.start()
+            self._path = path
+            # Expose on coordinator so sender/reader can tap RX/TX
+            setattr(self._coord, "rs485_logger", self._logger)
+            _LOGGER.info("RS-485 logging enabled → %s (auto-off in 15 min)", path)
+            # Schedule auto-off in 15 minutes
+            from homeassistant.helpers.event import async_call_later  # type: ignore
+            def _auto_off(_now=None):
+                self.hass.async_create_task(self.async_turn_off())
+            self._timer_remove = async_call_later(self.hass, 15 * 60, _auto_off)
+            self._is_on = True
+        except Exception as exc:
+            _LOGGER.warning("Failed to start RS-485 logger: %s", exc)
+        self.async_write_ha_state()
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        if not self._is_on:
+            return
+        try:
+            # Cancel auto-off timer
+            if self._timer_remove:
+                try:
+                    self._timer_remove()
+                except Exception:
+                    pass
+                self._timer_remove = None
+            # Detach and stop
+            try:
+                if getattr(self._coord, "rs485_logger", None) is self._logger:
+                    setattr(self._coord, "rs485_logger", None)
+            except Exception:
+                pass
+            if self._logger:
+                self._logger.stop()
+            _LOGGER.info("RS-485 logging disabled")
+        except Exception as exc:
+            _LOGGER.debug("Failed to stop RS-485 logger: %s", exc)
+        finally:
+            self._logger = None
+            self._is_on = False
+            self._path = None
+            self.async_write_ha_state()

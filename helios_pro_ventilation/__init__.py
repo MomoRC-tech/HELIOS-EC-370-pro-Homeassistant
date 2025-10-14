@@ -101,9 +101,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                         ]
                         for path in candidates:
                             if os.path.exists(path):
-                                with open(path, "rb") as f:
-                                    data = f.read()
-                                return web.Response(body=data, content_type="image/png")
+                                # Serve file directly without opening it on the event loop
+                                return web.FileResponse(path=path)
                     except Exception:
                         pass
                     # 1x1 transparent PNG fallback

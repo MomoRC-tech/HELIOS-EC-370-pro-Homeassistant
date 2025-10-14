@@ -24,8 +24,9 @@ The integration package is `custom_components/helios_pro_ventilation` and consis
 	- `sensor.py` — Numeric and text sensors for temperatures, hours, levels, version, date/time, etc.
 	- `binary_sensor.py` — Filter warning, party enabled, external contact.
 	- `select.py` — Fan level select (0..4).
-	- `switch.py` — Diagnostic “one‑shot variable scan”.
+	- `switch.py` — Diagnostic switches: one‑shot variable scan and RS‑485 stream logger (auto‑off after 15 min).
 - `debug_scanner.py` — Implements the one‑shot scan with aggregated summary logs and file exports.
+ - `debug/rs485_logger.py` — Passive RS‑485 logger tapping RX/TX, reconstructing frames in parallel, and writing an HTML log with color coding and statistics.
 - `const.py` — The `HeliosVar` index map with metadata (bit width, count, units, scaling, access, note).
 
 Data flow
@@ -95,6 +96,7 @@ The integration will automatically reload with the new connection settings. All 
 - Services to set auto mode, fan level, and party mode
  - Calendar: read/write a day (48 half-hour slots) and copy-day convenience service
 - Diagnostic one‑shot “variable scan” with logs and file exports
+ - Diagnostic RS‑485 stream logger (passive, auto‑off after 15 minutes)
 
 ## 7. Home Assistant interface
 
@@ -108,6 +110,10 @@ Entities (selection)
 	- Externer Kontakt (Var 0x14)
 	- Filterwechsel erforderlich (diagnostic/problem)
 - Sensors: fan level, temperatures (outdoor/extract/exhaust/supply), party current/preselect minutes, bypass temps, frost protection temp, hours on, min fan level, filter change months (diagnostic), party/zuluft/abluft levels, stage voltages (1–4, Zuluft/Abluft), nachlaufzeit seconds, software version, date/time text.
+
+Diagnostic switches
+- “variablen Scan (debug)” — one‑shot HeliosVar scan with summary.
+- “RS‑485 Logger” — captures RX/TX raw stream to a timestamped file; turns off automatically after 15 minutes.
 
 Services
 - `helios_pro_ventilation.set_auto_mode` — enabled: boolean
@@ -183,6 +189,19 @@ Use the switch “variablen Scan (debug)” to trigger a single pass over the va
 - Emit a single INFO summary at the end
 - Write a timestamped summary to text and Markdown files in the HA config directory (listing variable code, name, values, units, notes)
 - Include special handling so temperatures (Var 0x3A) and fan level (Var 0x35) appear even if not directly readable
+
+### RS‑485 stream logger
+Use the switch “RS‑485 Logger” to capture raw traffic for troubleshooting.
+
+- Captures and annotates:
+	- Generic frames: [addr, cmd, plen, var, payload, chk] — validates checksum; logs var name and decodes values using HeliosVar metadata.
+	- Broadcast frames: 0xFF 0xFF header with length and checksum.
+	- Pings (4 bytes) marked as such.
+	- Any bytes not part of a valid frame are written as “garbage”.
+- Output:
+	- File: `<config>/helios_rs485_YYYYMMDD-HHMMSS.html` (same directory used by the debug scanner summaries)
+	- Open in a browser to see a color‑coded table (green for known/broadcast, red for unknown/garbage, gray for pings) and a summary section with statistics (counts and min/avg/max intervals; garbage bytes total).
+ - Auto‑off: The logger stops automatically after 15 minutes to prevent long unattended captures.
 
 ## 10. Troubleshooting
 

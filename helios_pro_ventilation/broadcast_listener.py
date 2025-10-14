@@ -49,6 +49,13 @@ class HeliosBroadcastReader(threading.Thread):
                 if not chunk:
                     raise ConnectionError("No data received")
                 self.buf.extend(chunk)
+                # Tap RX bytes into optional RS-485 logger (non-intrusive)
+                try:
+                    logger = getattr(self.coord, "rs485_logger", None)
+                    if logger is not None and hasattr(logger, "on_rx"):
+                        logger.on_rx(bytes(chunk))
+                except Exception:
+                    pass
                 made_progress = True
 
                 while made_progress:
@@ -118,6 +125,31 @@ class HeliosBroadcastReader(threading.Thread):
                         try:
                             var = generic.get("var")
                             vals = generic.get("values") or []
+                            
+                            def _publish_clock_telemetry_if_ready():
+                                """Compute and publish clock drift/sync immediately when both date and time are known.
+
+                                This avoids leaving diagnostic sensors Unavailable until the hourly drift task runs.
+                                """
+                                try:
+                                    import datetime as _dt
+                                    date_s = str(self.coord.data.get("date_str") or "")
+                                    time_s = str(self.coord.data.get("time_str") or "")
+                                    if not date_s or not time_s:
+                                        return
+                                    y, mo, d = [int(x) for x in date_s.split("-")]
+                                    h, mi = [int(x) for x in time_s.split(":" )]
+                                    dev_dt = _dt.datetime(y, mo, d, h, mi)
+                                    now_dt = _dt.datetime.now()
+                                    drift = abs((now_dt - dev_dt).total_seconds()) / 60.0
+                                    max_drift = max(0, int(getattr(self.coord, 'time_sync_max_drift_min', 20)))
+                                    self.coord.update_values({
+                                        "device_clock_drift_min": round(drift, 1),
+                                        "device_clock_in_sync": drift <= max_drift,
+                                        "device_date_time_state": "ok",
+                                    })
+                                except Exception as _exc:
+                                    _LOGGER.debug("Immediate clock telemetry failed: %s", _exc)
                             if var == HeliosVar.Var_10_party_curr_time and vals:
                                 # minutes remaining for current party and derived enabled flag
                                 minutes = int(vals[0])
@@ -161,10 +193,31 @@ class HeliosBroadcastReader(threading.Thread):
                                     self.coord.update_values({"software_version": ".".join(str(int(v)) for v in vals)})
                             elif var == HeliosVar.Var_07_date_month_year and len(vals) >= 3:
                                 day, month, year = int(vals[0]), int(vals[1]), int(vals[2])
-                                self.coord.update_values({"date_str": f"{2000+year:04d}-{month:02d}-{day:02d}" if year < 100 else f"{year:04d}-{month:02d}-{day:02d}"})
-                            elif var == HeliosVar.Var_08_time_hour_min and len(vals) >= 2:
-                                hour, minute = int(vals[0]), int(vals[1])
-                                self.coord.update_values({"time_str": f"{hour:02d}:{minute:02d}"})
+                                self.coord.update_values({
+                                    "date_str": f"{2000+year:04d}-{month:02d}-{day:02d}" if year < 100 else f"{year:04d}-{month:02d}-{day:02d}"
+                                })
+                                _publish_clock_telemetry_if_ready()
+                            elif var == HeliosVar.Var_08_time_hour_min and len(vals) >= 1:
+                                # Prefer [hour, minute] format; fall back to single value as minutes-of-day if device uses 16-bit encoding
+                                hour, minute = None, None
+                                try:
+                                    if len(vals) >= 2:
+                                        h0, m0 = int(vals[0]), int(vals[1])
+                                        if 0 <= h0 <= 23 and 0 <= m0 <= 59:
+                                            hour, minute = h0, m0
+                                        else:
+                                            # Some bridges/devices report time as 16-bit minutes-of-day split over two bytes
+                                            mod = max(0, min(24 * 60 - 1, (m0 << 8) | (h0 & 0xFF)))
+                                            hour, minute = mod // 60, mod % 60
+                                    else:
+                                        # Fallback: a single 16-bit minutes-of-day value (0..1439)
+                                        mod = max(0, min(24 * 60 - 1, int(vals[0])))
+                                        hour, minute = mod // 60, mod % 60
+                                except Exception:
+                                    pass
+                                if hour is not None and minute is not None:
+                                    self.coord.update_values({"time_str": f"{hour:02d}:{minute:02d}"})
+                                    _publish_clock_telemetry_if_ready()
                             elif var == HeliosVar.Var_49_nachlaufzeit and vals:
                                 self.coord.update_values({"nachlaufzeit_s": int(vals[0])})
                             elif var == HeliosVar.Var_16_fan_1_voltage and len(vals) >= 2:
@@ -444,6 +497,13 @@ class HeliosBroadcastReader(threading.Thread):
                 frame = self.coord.tx_queue.popleft()
                 try:
                     self.sock.sendall(frame)
+                    # Tap TX bytes into optional RS-485 logger
+                    try:
+                        logger = getattr(self.coord, "rs485_logger", None)
+                        if logger is not None and hasattr(logger, "on_tx"):
+                            logger.on_tx(bytes(frame))
+                    except Exception:
+                        pass
                     var_idx = frame[3] if len(frame) >= 5 else None
                     if var_idx == HeliosVar.Var_3A_sensors_temp:
                         _LOGGER.debug("Sent Var_3A sensor read request: %s", frame.hex(' '))
