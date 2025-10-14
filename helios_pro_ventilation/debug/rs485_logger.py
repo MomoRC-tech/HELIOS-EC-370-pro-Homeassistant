@@ -47,7 +47,8 @@ class Rs485Logger:
     def _make_path(self, base_path: Optional[str]) -> str:
         """Choose a log file path in the HA config directory using a stable base name.
 
-        - If base_path is provided, use its folder; otherwise use hass.config.path("") (HA config root).
+                - If base_path is provided, use its folder (treat as directory when it exists or ends with a separator);
+                    otherwise use hass.config.path("") (HA config root).
         - Always name the file as helios_rs485_YYYYmmdd-HHMMSS.html
         """
         try:
@@ -55,7 +56,12 @@ class Rs485Logger:
             folder = None
             if base_path:
                 # If caller passed a directory, use it; otherwise use the directory of the file
-                if base_path.endswith(os.sep) or base_path.endswith("/"):
+                is_dir = False
+                try:
+                    is_dir = os.path.isdir(base_path)
+                except Exception:
+                    is_dir = False
+                if is_dir or base_path.endswith(os.sep) or base_path.endswith("/"):
                     folder = base_path.rstrip("/\\")
                 else:
                     folder = os.path.dirname(base_path)

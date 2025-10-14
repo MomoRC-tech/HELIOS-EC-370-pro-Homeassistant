@@ -1,24 +1,61 @@
 # __init__.py (essentials)
 import logging, threading, voluptuous as vol, os, json, base64
-from homeassistant.core import HomeAssistant
-from homeassistant.config_entries import ConfigEntry, SOURCE_IMPORT
-from homeassistant.const import Platform
-from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.service import async_set_service_schema
-from homeassistant.util.yaml import load_yaml
-from homeassistant.components.http import HomeAssistantView
-from homeassistant.components.frontend import (
-    async_register_built_in_panel,
-    async_remove_panel,
-)
-from aiohttp import web
+
+# Make Home Assistant imports optional so tests can import this package without HA installed
+try:  # pragma: no cover - environment dependent
+    from homeassistant.core import HomeAssistant
+    from homeassistant.config_entries import ConfigEntry, SOURCE_IMPORT
+    from homeassistant.const import Platform
+    from homeassistant.helpers import config_validation as cv
+    from homeassistant.helpers.service import async_set_service_schema
+    from homeassistant.util.yaml import load_yaml
+    from homeassistant.components.http import HomeAssistantView
+    from homeassistant.components.frontend import (
+        async_register_built_in_panel,
+        async_remove_panel,
+    )
+    from aiohttp import web
+    _HA_AVAILABLE = True
+except Exception:  # pragma: no cover - used only outside HA
+    # Minimal stubs for test environment; functions below are noop unless HA is available
+    HomeAssistant = object  # type: ignore
+    ConfigEntry = object  # type: ignore
+    SOURCE_IMPORT = "import"  # type: ignore
+    try:
+        # Provide simple string-typed fallback for Platform list typing
+        class Platform(str):
+            pass
+    except Exception:
+        Platform = str  # type: ignore
+    cv = object()  # type: ignore
+    def async_set_service_schema(*args, **kwargs):  # type: ignore
+        return None
+    def load_yaml(*args, **kwargs):  # type: ignore
+        return {}
+    class HomeAssistantView:  # type: ignore
+        pass
+    def async_register_built_in_panel(*args, **kwargs):  # type: ignore
+        return None
+    def async_remove_panel(*args, **kwargs):  # type: ignore
+        return None
+    class _WebStub:  # type: ignore
+        class Response:  # minimal placeholder
+            pass
+        class FileResponse:  # minimal placeholder
+            def __init__(self, *args, **kwargs):
+                pass
+    web = _WebStub()  # type: ignore
+    _HA_AVAILABLE = False
 
 from .const import DOMAIN, DEFAULT_HOST, DEFAULT_PORT
 from .coordinator import HeliosCoordinatorWithQueue
 from .broadcast_listener import HeliosBroadcastReader
 
 _LOGGER = logging.getLogger(__name__)
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.CLIMATE, Platform.SWITCH, Platform.FAN, Platform.SELECT]
+if _HA_AVAILABLE:
+    PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.CLIMATE, Platform.SWITCH, Platform.FAN, Platform.SELECT]
+else:  # fallback for tests without HA installed
+    PLATFORMS = ["sensor", "binary_sensor", "climate", "switch", "fan", "select"]
 
 # --- YAML support: import → create a config entry so devices/entities show in UI
 async def async_setup(hass: HomeAssistant, config: dict):
