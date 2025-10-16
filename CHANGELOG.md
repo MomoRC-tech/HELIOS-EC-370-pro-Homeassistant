@@ -1,3 +1,9 @@
+## 5.3.0 — 2025-10-16
+
+Minor release
+- Docs: Added quick access tips for the calendar editor, including a ready-to-use Lovelace Markdown card for one-click access from dashboards.
+- Guidance: Explained Home Assistant limitations for device page buttons and provided dashboard button alternatives.
+
 ## 5.2.5 — 2025-10-16
 
 Patch release

@@ -294,6 +294,34 @@ Date/time protocol notes
 
 ---
 
+## Filter maintenance tips
+
+The integration exposes two filter-related entities:
+
+- Filterwechsel (Monate): Number of months until the next filter change (from Var 0x38). This is a slow-changing value.
+- Filterwechsel erforderlich (binary): Turns on when the unit requests a filter change.
+
+Example notification automation (send a message when the warning turns on):
+
+```yaml
+alias: Helios Filterwechsel Hinweis
+description: Benachrichtigung, wenn Filterwechsel erforderlich ist
+trigger:
+  - platform: state
+    entity_id: binary_sensor.helios_filterwechsel_erforderlich
+    to: 'on'
+action:
+  - service: notify.mobile_app_mein_telefon
+    data:
+      title: Helios EC-Pro
+      message: Filterwechsel erforderlich.
+mode: single
+```
+
+You can also create a dashboard card that shows both the months remaining and the warning state.
+
+---
+
 ## License
 MIT — see LICENSE
 
@@ -409,19 +437,34 @@ cards:
 
 ---
 
-## Calendar editor UI
 
-You can view and edit the weekly schedule directly in Home Assistant.
+## Calendar editor UI — quick access
 
-- Open it from the sidebar: Helios Calendar, or go to the direct URL: `/api/helios_pro_ventilation/calendar.html`.
-- The grid shows 7 rows (Mon..Sun) and 48 half-hour slots per day.
-- Brush painting: pick a brush level (0–4) and drag across slots to paint.
-- Range scheduler: pick Start and End time (30‑min steps), choose a Level, select day(s), then click Schedule.
-  - Optional “Clear others” resets unselected slots on those day(s) to 0 before applying the range.
-  - Overnight ranges are supported (e.g., 22:00 → 06:00 wraps across midnight).
-- Unsaved indicator: days with local changes show a red bullet; click Save on the row or “Save selected” to write multiple days.
-- Refresh reloads current values from the integration; missing days will be queued for reading.
- - The toolbar shows a compact clock/status caption (state, date/time, drift, sync) when available.
+You can view and edit the weekly schedule directly in Home Assistant:
+
+- **Sidebar:** Look for “Helios Calendar” in the sidebar (if enabled).
+- **Direct link:** Open `/api/helios_pro_ventilation/calendar.html` in your browser (bookmark it for convenience).
+
+**Tip:** Add a dashboard Markdown card for one-click access:
+
+```yaml
+type: markdown
+title: Helios Kalender
+content: |
+  [🗓️ Kalender öffnen](/api/helios_pro_ventilation/calendar.html)
+```
+
+---
+
+**Editor features:**
+- 7 rows (Mon..Sun), 48 half-hour slots per day
+- Brush painting: pick a level (0–4), drag to paint
+- Range scheduler: pick Start/End, Level, days, then click Schedule
+  - “Clear others” resets unselected slots to 0 before applying
+  - Overnight ranges supported (e.g., 22:00 → 06:00 wraps across midnight)
+- Unsaved indicator: days with local changes show a red bullet; click Save on the row or “Save selected”
+- Refresh reloads current values; missing days will be queued for reading
+- Toolbar shows a compact clock/status caption (state, date/time, drift, sync) when available
 
 ---
 
