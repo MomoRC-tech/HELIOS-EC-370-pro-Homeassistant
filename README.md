@@ -145,7 +145,7 @@ The integration will automatically reload with the new settings.
   - Stufe 1–4 Spannungen Zuluft/Abluft (Var 0x16..0x19)
   - Nachlaufzeit (Sekunden) (Var 0x49)
   - Software Version (Var 0x48)
-  - Datum / Uhrzeit (reads via Var 0x07 responses; time may also arrive under Var 0x07)
+  - Datum (Gerät), Uhrzeit (Gerät), Wochentag (Gerät) — parsed from the periodic broadcast frame
 - Switches:
   - Debug, one‑shot variable scan (stable id: `switch.helios_ec_pro_variablen_scan_debug`)
   - Lüftung EIN/AUS (Stufe 1): simple ON/OFF for manual level 1 vs level 0 (for widgets)
@@ -189,6 +189,7 @@ The integration includes a diagnostic switch to capture the raw RS‑485 byte st
     - Valid generic frames ([addr, cmd, plen, var, payload, chk])
     - Broadcast frames (0xFF 0xFF …)
     - Pings (4‑byte sync)
+    - Acknowledge/status frames (cmd=0x05) — filterable as their own type
     - Any unmatched bytes as “garbage”
   - Known variable IDs are resolved using the HeliosVar map and values are decoded using the same metadata (width/scale), appended as labels like “ID 0x16 (Var_16_fan_1_voltage) values=[…]”.
 - Auto‑off: If left on, the switch automatically turns off after 15 minutes.
@@ -198,8 +199,18 @@ The integration includes a diagnostic switch to capture the raw RS‑485 byte st
     - Broadcast and known frames are shown in green tones
     - Unknown frames and garbage are shown in red tones
     - Pings are shown in gray
-  - The file ends with a "Summary" section listing counts and min/avg/max inter‑arrival intervals for pings, broadcasts, and frames, plus total garbage bytes.
+    - There are quick filters (including Ack) to focus on specific categories.
+  - The file ends with a "Summary" section with aligned columns showing:
+    - Trace span (first → last event time)
+    - Counts and min/avg/max inter‑event intervals for TX frames and RX frames (separately)
+    - Counts/intervals for pings and broadcasts; Ack/known/unknown totals; total garbage bytes
+    - Per‑variable RX/TX frequency list for generic frames
+  - Broadcast rows highlight known vs unknown payload bytes and include a compact summary with fan level, AUTO, filter warning, and the device date/time/weekday parsed from the broadcast.
+  - On shutdown, any residual trailing bytes are flushed as tail garbage so nothing is silently dropped.
   - Tip: You can also open the file as plain text if needed.
+
+Notes:
+- Row summary tags use TX ok / RX ok for successful requests/responses and ack ok for acknowledgements.
 
 Note: This logger is passive and has minimal overhead. When the switch is off, there is no impact on the integration.
 
@@ -226,7 +237,7 @@ This integration talks the simple Helios EC‑Pro RS‑485 protocol. A quick ref
 
 - Broadcast frames
   - Layout: [0xFF, 0xFF, plen, payload..., chk]
-  - Carry current fan level, auto flag, filter warning, etc.; emitted periodically by the bus.
+  - Carry current fan level, auto flag, filter warning, as well as device date/time and weekday; emitted periodically by the bus. This integration uses the broadcast frame as the primary source for these sensors.
 
 - Bus ping
   - 4‑byte pattern: [b0, 0x00, 0x00, chk]
@@ -261,9 +272,10 @@ Sensor
  - Text sensor `Geräteuhr Status` indicates "unknown/loading/ok".
 
 Date/time protocol notes
-- Reads: The device may provide date and/or time responses under Var 0x07. This integration reads Var 0x07 only; it does not issue Var 0x08 read requests.
-- Writes: Time writes to Var 0x08 are supported, but read-backs for Var 0x08 are not queued; confirmation relies on subsequent Var 0x07 reads.
-- ACK/status frames are logged only and never interpreted as values.
+- Sensors: Device date, time, and weekday are parsed from the periodic broadcast frame and exposed as standard sensors.
+- Reads: The integration performs Var 0x07 reads for clock sync/drift logic; Var 0x08 reads are not issued.
+- Writes: Time writes to Var 0x08 are supported; confirmation relies on subsequent Var 0x07 reads or later broadcast updates.
+- ACK/status frames are logged and marked as such (filterable in the HTML logger) and are not interpreted as values.
 
 ---
 

@@ -30,13 +30,11 @@ class HeliosTextSensor(HeliosBaseEntity, SensorEntity):
     def __init__(self, coord, key, name, entry):
         super().__init__(coord, key, name, entry)
         self._unit = None
-        # Mark text sensors as diagnostic; keep SW version enabled, hide date/time by default
+        # Mark only software_version as diagnostic now; date/time/weekday are standard sensors
         try:
-            if key in {"software_version", "date_str", "time_str"}:
+            if key in {"software_version"}:
                 from homeassistant.helpers.entity import EntityCategory  # lazy import
                 self._attr_entity_category = EntityCategory.DIAGNOSTIC
-                if key in {"date_str", "time_str"}:
-                    self._attr_entity_registry_enabled_default = False
         except Exception:
             pass
     @property
@@ -91,9 +89,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         HeliosNumberSensor(coord, "fan3_voltage_abluft", "Stufe 3 Spannung Abluft", "V", entry),
         HeliosNumberSensor(coord, "fan4_voltage_zuluft", "Stufe 4 Spannung Zuluft", "V", entry),
         HeliosNumberSensor(coord, "fan4_voltage_abluft", "Stufe 4 Spannung Abluft", "V", entry),
-        HeliosTextSensor(coord, "software_version", "Software Version", entry),
-        HeliosTextSensor(coord, "date_str", "Datum (Gerät)", entry),
-        HeliosTextSensor(coord, "time_str", "Uhrzeit (Gerät)", entry),
+    HeliosTextSensor(coord, "software_version", "Software Version", entry),
+    HeliosTextSensor(coord, "weekday_name", "Wochentag (Gerät)", entry),
+    HeliosTextSensor(coord, "date_str", "Datum (Gerät)", entry),
+    HeliosTextSensor(coord, "time_str", "Uhrzeit (Gerät)", entry),
     HeliosTextSensor(coord, "device_date_time_state", "Geräteuhr Status", entry),
     ]
     # Diagnostic sensors for calendar day visibility (disabled by default)

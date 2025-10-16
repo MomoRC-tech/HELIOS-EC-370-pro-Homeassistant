@@ -6,6 +6,22 @@ DEFAULT_HOST = "192.168.0.51"
 DEFAULT_PORT = 8234
 CLIENT_ID = 0x11  # our client address on the RS-485 bus
 
+# Broadcast frame (device → bus)
+# Layout: [0]=0xFF, [1]=0xFF, [2]=plen, [3..3+plen-1]=payload, [3+plen]=checksum
+# Checksum: (sum(all bytes except checksum) + 1) & 0xFF
+# Known payload byte meanings (0-based within payload):
+#   [0]=day (1..31)
+#   [1]=weekday index (0=Mon..6=Sun)
+#   [2]=month (1..12)
+#   [3]=year (00..99 → 2000+YY)
+#   [4]=hour (0..23)
+#   [5]=minute (0..59)
+#   [6]=fan_level (0..4)
+#   [7] bit0 → auto_mode (1=on)
+#   [10] bit0 → filter_warning (1=replace filter)
+# The parser fills date_str (YYYY-MM-DD), time_str (HH:MM), weekday_index/name, fan_level,
+# auto_mode, filter_warning, and _frame_ts from a valid broadcast frame.
+
 
 class HeliosVar(IntEnum):
     """Helios EC-Pro variable indices with structured specs.

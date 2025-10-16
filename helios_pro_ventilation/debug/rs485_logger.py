@@ -209,6 +209,19 @@ class Rs485Logger:
                 _LOGGER.debug("RS485 logger worker error: %s", exc)
         # Graceful shutdown and close file in worker
         try:
+            # Flush any residual partial bytes as tail garbage so nothing is dropped
+            try:
+                if self._rx_buf:
+                    self._emit_garbage("RX", bytes(self._rx_buf), self._ts())
+                    self._rx_buf.clear()
+            except Exception:
+                pass
+            try:
+                if self._tx_buf:
+                    self._emit_garbage("TX", bytes(self._tx_buf), self._ts())
+                    self._tx_buf.clear()
+            except Exception:
+                pass
             if not self._raw_only:
                 self._write_html_footer()
             if (not self._raw_only) and self._file:
@@ -409,12 +422,60 @@ class Rs485Logger:
                 "kind": "broadcast",
                 "data": frame.hex(),
             }, ts_override)
+            # Build enhanced hex with known/unknown highlights for payload bytes
+            plen = frame[2]
+            payload = frame[3:3+plen]
+            # Known: payload[6] fan_level, payload[7] bit0 auto_mode, payload[10] bit0 filter_warning
+            known_idx = {6: 'fan_level', 7: 'auto_mode(bit0)', 10: 'filter_warning(bit0)'}
+            # Render hex segments
+            def _seg(byte_val: int, idx: int) -> str:
+                if idx in known_idx:
+                    title = known_idx[idx]
+                    return f'<span class="hex hex-known" title="{title}">{byte_val:02x}</span>'
+                return f'<span class="hex hex-unknown" title="payload[{idx}]=0x{byte_val:02x}">{byte_val:02x}</span>'
+            # Header and checksum normal hex
+            head_hex = f"{frame[0]:02x} {frame[1]:02x} {frame[2]:02x}"
+            pay_hex = " ".join(_seg(b, i) for i, b in enumerate(payload))
+            tail_hex = f" {frame[-1]:02x}"
+            hex_html = f"<span class=\"hex\">{head_hex} </span>{pay_hex}<span class=\"hex\">{tail_hex}</span>"
+            # Summary suffix for known fields (compact)
+            # Also include date/time and weekday from payload when available
+            fan_level = payload[6] if len(payload) > 6 else None
+            auto_bit = (payload[7] & 0x01) if len(payload) > 7 else None
+            filter_bit = (payload[10] & 0x01) if len(payload) > 10 else None
+            day = payload[0] if len(payload) > 0 else None
+            weekday_idx = payload[1] if len(payload) > 1 else None
+            month = payload[2] if len(payload) > 2 else None
+            year_yy = payload[3] if len(payload) > 3 else None
+            hour = payload[4] if len(payload) > 4 else None
+            minute = payload[5] if len(payload) > 5 else None
+            wd_names = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
+            kv = []
+            if fan_level is not None:
+                kv.append(f"fan_level={fan_level}")
+            if auto_bit is not None:
+                kv.append(f"auto_mode={bool(auto_bit)}")
+            if filter_bit is not None:
+                kv.append(f"filter_warn={bool(filter_bit)}")
+            if (day is not None) and (month is not None) and (year_yy is not None):
+                yyyy = 2000 + (int(year_yy) % 100)
+                kv.append(f"date={int(yyyy):04d}-{int(month):02d}-{int(day):02d}")
+            if (hour is not None) and (minute is not None):
+                kv.append(f"time={int(hour):02d}:{int(minute):02d}")
+            if weekday_idx is not None:
+                try:
+                    wd_abbr = wd_names[int(weekday_idx) % 7]
+                except Exception:
+                    wd_abbr = str(weekday_idx)
+                kv.append(f"wd={wd_abbr}({int(weekday_idx)})")
+            suffix_txt = (" | " + ", ".join(kv)) if kv else ""
             if self._raw_only:
                 self._write_raw_html_row(
                     category="broadcast",
                     direction=direction,
-                    summary=f"broadcast ok, plen={frame[2]}",
+                    summary=f"broadcast ok, plen={frame[2]}{suffix_txt}",
                     data=frame,
+                    hex_html=hex_html,
                     var_label="",
                     ts_override=ts_override,
                 )
@@ -422,8 +483,9 @@ class Rs485Logger:
                 self._write_row(
                     category="broadcast",
                     direction=direction,
-                    summary=f"broadcast ok, plen={frame[2]}",
+                    summary=f"broadcast ok, plen={frame[2]}{suffix_txt}",
                     data=frame,
+                    hex_html=hex_html,
                     var_label="",
                     ts_override=ts_override,
                 )
@@ -439,6 +501,7 @@ class Rs485Logger:
                 "kind": "broadcast",
                 "data": frame.hex(),
             }, ts_override)
+            # Fallback simple row on errors
             if self._raw_only:
                 self._write_raw_html_row(
                     category="broadcast",
@@ -692,7 +755,7 @@ class Rs485Logger:
             ".cat-ping{background:#2b2b2b;} .cat-broadcast{background:#103410;} .cat-ack{background:#2b2e3a;} .cat-known{background:#0e2f0e;} .cat-unknown{background:#401515;} .cat-garbage{background:#2b1f1f;}"
             ".cat-broadcast .summary,.cat-known .summary{color:#cfeecf;} .cat-unknown .summary,.cat-garbage .summary{color:#ffd0d0;} .cat-ping .summary{color:#ccc;} .cat-ack .summary{color:#cfe9ff;}"
             ".dir-tx.cat-known td,.dir-tx.cat-unknown td{background:#0b1e3a;} .dir-tx .summary,.dir-tx .hex,.dir-tx .kind,.dir-tx .dir{color:#cfe9ff;}"
-            ".hex-prev{color:#8fd88f;} .hex-garbage{color:#ffd0d0;} .tag{display:inline-block;min-width:120px;margin-right:8px;} .summary-rest{display:inline-block;}"
+            ".hex-prev{color:#8fd88f;} .hex-garbage{color:#ffd0d0;} .hex-known{color:#8fd88f;font-weight:600;} .hex-unknown{color:#cccccc;} .tag{display:inline-block;min-width:120px;margin-right:8px;} .summary-rest{display:inline-block;}"
         )
         # Lightweight JS to toggle categories and individual variables; persists state in localStorage
         js = (

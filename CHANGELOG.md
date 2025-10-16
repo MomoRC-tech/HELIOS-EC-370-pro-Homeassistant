@@ -1,3 +1,11 @@
+## 5.2.4 — 2025-10-16
+
+Patch release
+- Broadcast parsing: Extract and expose device date, time, and weekday from the periodic broadcast frame. Added a new sensor “Wochentag (Gerät)” and moved date/time to standard sensors (no longer diagnostic).
+- Logger HTML: Broadcast rows now highlight known vs unknown payload bytes and include a concise summary of fan level, AUTO, filter warning, and date/time/weekday. Added explicit Ack filter and finalized summary tags to “TX ok”, “RX ok”, and “ack ok”.
+- Logger stats: Footer summary now shows the trace time span, aligned columns, separate TX/RX inter-event statistics, and per-variable RX/TX frequencies. Tail bytes are flushed as “garbage” at shutdown to avoid silent drops.
+- Docs: README updated to reflect broadcast-sourced date/time/weekday sensors and logger changes.
+
 ## 5.2.3 — 2025-10-16
 
 Patch release

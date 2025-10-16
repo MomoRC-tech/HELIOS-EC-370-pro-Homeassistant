@@ -56,12 +56,33 @@ def try_parse_broadcast(buf: bytearray) -> Optional[Dict[str, Any]]:
         buf.pop(0)
         return None
     del buf[:total]
-    return {
+    # Payload starts at frame[3]
+    day = int(frame[3])
+    weekday_idx = int(frame[4])
+    month = int(frame[5])
+    year_yy = int(frame[6])
+    hour = int(frame[7])
+    minute = int(frame[8])
+    yyyy = 2000 + (year_yy % 100)
+    # Weekday name mapping (0=Mon..6=Sun)
+    _wd_names = [
+        "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"
+    ]
+    wd_name = _wd_names[weekday_idx] if 0 <= weekday_idx < len(_wd_names) else str(weekday_idx)
+    values: Dict[str, Any] = {
+        # Known broadcast fields
         "fan_level": frame[9],
         "auto_mode": bool(frame[10] & 0x01),
         "filter_warning": bool(frame[13] & 0x01),
+        # New: derive date/time directly from broadcast payload
+        "date_str": f"{int(yyyy):04d}-{month:02d}-{day:02d}",
+        "time_str": f"{hour:02d}:{minute:02d}",
+        # Optional: expose weekday index (0=Mon..6=Sun) for diagnostics
+        "weekday_index": weekday_idx,
+        "weekday_name": wd_name,
         "_frame_ts": time.time(),
     }
+    return values
 
 def try_parse_var3a(buf: bytearray) -> Optional[Dict[str, Any]]:
     if len(buf) < 5:
