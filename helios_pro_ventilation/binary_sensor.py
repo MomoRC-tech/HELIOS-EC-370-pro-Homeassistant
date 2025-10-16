@@ -45,10 +45,9 @@ class HeliosBaseEntity:
 class HeliosBinarySensor(HeliosBaseEntity, BinarySensorEntity):
 	def __init__(self, coord, key, name, entry):
 		super().__init__(coord, key, name, entry)
-		# Mark "filter_warning" explicitly as a problem/diagnostic entity
+		# Mark "filter_warning" explicitly as a problem binary sensor (non-diagnostic)
 		if self._key == "filter_warning":
 			self._attr_device_class = BinarySensorDeviceClass.PROBLEM
-			self._attr_entity_category = EntityCategory.DIAGNOSTIC
 		# Hide ext_contact by default; it's an auxiliary input
 		if self._key == "ext_contact":
 			try:

@@ -156,7 +156,6 @@ class HeliosNumberSensor(HeliosBaseEntity, SensorEntity):
             pass
         # Mark some sensors as diagnostics
         diag_keys = {
-            "change_filter_months",
             "hours_on",
             "min_fan_level",
             "nachlaufzeit_s",

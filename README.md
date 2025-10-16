@@ -128,7 +128,7 @@ The integration will automatically reload with the new settings.
 - Fan (percentage control 0–100 mapped to levels 0–4; presets auto/manual)
 - Select: Lüfterstufe (Auswahl) — options [0..4] mapped to fan levels
 - Binary sensors:
-  - filter warning (diagnostic)
+  - filter warning
   - Partymodus aktiv (derived from Var 0x10)
   - Externer Kontakt (Var 0x14)
 - Sensors:
@@ -140,7 +140,7 @@ The integration will automatically reload with the new settings.
   - Frostschutz Temperatur (Var 0x1F)
   - Betriebsstunden (Var 0x15)
   - Minimale Lüfterstufe (Var 0x37)
-  - Filterwechsel (Monate) (Var 0x38; diagnostic)
+  - Filterwechsel (Monate) (Var 0x38)
   - Party/Zuluft/Abluft Lüfterstufen (Var 0x42/0x45/0x46)
   - Stufe 1–4 Spannungen Zuluft/Abluft (Var 0x16..0x19)
   - Nachlaufzeit (Sekunden) (Var 0x49)

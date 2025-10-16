@@ -1,3 +1,11 @@
+## 5.2.5 — 2025-10-16
+
+Patch release
+- Visibility: Both Filterwechsel entities are now under Sensors on the HA device page by default.
+	- filter_warning remains a PROBLEM binary sensor but is no longer categorized as diagnostic.
+	- Filterwechsel (Monate) (`change_filter_months`) is now a standard number sensor (not diagnostic).
+- Docs: README Entities section updated accordingly.
+
 ## 5.2.4 — 2025-10-16
 
 Patch release
