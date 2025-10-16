@@ -42,9 +42,13 @@ class Rs485Logger:
         self._stats: Dict[str, Dict[str, Any]] = {
             "ping": {"count": 0, "last": None, "intervals": []},
             "broadcast": {"count": 0, "last": None, "intervals": []},
+            "ack": {"count": 0, "last": None, "intervals": []},
             "known": {"count": 0, "last": None, "intervals": []},
             "unknown": {"count": 0, "last": None, "intervals": []},
             "garbage": {"count": 0, "bytes": 0},
+            # Directional tallies across all non-ping/non-garbage frames
+            "tx": {"count": 0, "last": None, "intervals": []},
+            "rx": {"count": 0, "last": None, "intervals": []},
         }
         # Variable counts by RX/TX for generic frames
         self._var_counts_rx: Dict[int, int] = {}
@@ -359,6 +363,8 @@ class Rs485Logger:
             frame = bytes(buf[:4])
             del buf[:4]
             self._mark_event("ping")
+            # Directional tally for all frames
+            self._mark_event("tx" if direction == "TX" else "rx")
             # Raw
             self._write_raw({
                 "dir": direction,
@@ -390,6 +396,8 @@ class Rs485Logger:
         # Layout: [0xFF, 0xFF, plen, payload..., chk]
         try:
             self._mark_event("broadcast")
+            # Directional count
+            self._mark_event("tx" if direction == "TX" else "rx")
             # Remember last frame for this direction
             if direction == "TX":
                 self._last_frame_tx = frame
@@ -467,12 +475,9 @@ class Rs485Logger:
                 label = f"{var_name}"
             except Exception:
                 label = None
-            # Directional semantics (best effort)
-            role = "frame"
-            if direction == "TX":
-                role = "request" if cmd in (0x00, 0x01) else "frame"
-            elif direction == "RX":
-                role = "response" if cmd in (0x00, 0x01) else "frame"
+            # Directional semantics and ACK detection
+            is_reqresp = cmd in (0x00, 0x01)
+            is_ack = (cmd == 0x05)
             # Render values compactly
             val_txt = ""
             if isinstance(values, list) and values:
@@ -484,14 +489,21 @@ class Rs485Logger:
             # Compose
             suffix = ""
             if label:
-                suffix = f" | {role}: ID 0x{var_idx:02X} ({label})"
-            # Stats: known vs unknown
-            if label is not None:
-                self._mark_event("known")
-                cat = "known"
+                role_txt = ("TX" if direction == "TX" else "RX") if is_reqresp else "frame"
+                suffix = f" | {role_txt}: ID 0x{var_idx:02X} ({label})"
+            # Stats: ack vs known/unknown
+            if is_ack:
+                self._mark_event("ack")
+                cat = "ack"
             else:
-                self._mark_event("unknown")
-                cat = "unknown"
+                if label is not None:
+                    self._mark_event("known")
+                    cat = "known"
+                else:
+                    self._mark_event("unknown")
+                    cat = "unknown"
+            # Directional overall
+            self._mark_event("tx" if direction == "TX" else "rx")
             # Count variables per direction
             try:
                 if direction == "TX":
@@ -508,13 +520,13 @@ class Rs485Logger:
             # Raw
             self._write_raw({
                 "dir": direction,
-                "kind": "generic",
+                "kind": ("ack" if is_ack else "generic"),
                 "data": frame.hex(),
                 "var": var_idx,
             }, ts_override)
             if self._raw_only:
                 summary = (
-                    f"frame ok addr=0x{addr:02X} cmd=0x{cmd:02X} var=0x{var_idx:02X} len={plen} chk=0x{chk:02X}"
+                    f"{'ack ok' if is_ack else 'frame ok'} addr=0x{addr:02X} cmd=0x{cmd:02X} var=0x{var_idx:02X} len={plen} chk=0x{chk:02X}"
                 )
                 self._write_raw_html_row(
                     category=cat,
@@ -526,8 +538,15 @@ class Rs485Logger:
                     ts_override=ts_override,
                 )
             else:
+                # Summary tag: TX ok for requests, RX ok for responses; ack ok for ACK frames
+                if is_ack:
+                    tag = "ack ok"
+                elif is_reqresp:
+                    tag = "TX ok" if direction == "TX" else "RX ok"
+                else:
+                    tag = "frame ok"
                 summary = (
-                    f"{role} ok addr=0x{addr:02X} cmd=0x{cmd:02X} var=0x{var_idx:02X} len={plen} chk=0x{chk:02X}{val_txt}{suffix}"
+                    f"{tag} addr=0x{addr:02X} cmd=0x{cmd:02X} var=0x{var_idx:02X} len={plen} chk=0x{chk:02X}{val_txt}{suffix}"
                 )
                 self._write_row(
                     category=cat,
@@ -540,6 +559,7 @@ class Rs485Logger:
                 )
         except Exception as exc:
             self._mark_event("unknown")
+            self._mark_event("tx" if direction == "TX" else "rx")
             if self._raw_only:
                 self._write_raw_html_row(
                     category="unknown",
@@ -606,6 +626,7 @@ class Rs485Logger:
         kind = {
             "ping": "Ping",
             "broadcast": "Broadcast",
+            "ack": "Ack",
             "known": "Known",
             "unknown": "Unknown",
             "garbage": "Garbage",
@@ -616,7 +637,7 @@ class Rs485Logger:
         else:
             hex_cell = html.escape(data.hex(" "))
         row_cls = [f"cat-{category}"]
-        if direction == "TX" and category in ("known", "unknown"):
+        if direction == "TX" and category in ("known", "unknown", "ack"):
             row_cls.append("dir-tx")
         cls = " ".join(row_cls)
         var_cell = html.escape(var_label or "")
@@ -668,8 +689,8 @@ class Rs485Logger:
             "h1{font-size:18px;margin:12px 16px;} .meta{margin:0 16px 8px 16px;color:#aaa;}"
             "table{width:100%;border-collapse:collapse;font-size:13px;} thead th{position:sticky;top:0;background:#1a1a1a;color:#bbb;text-align:left;border-bottom:1px solid #333;padding:6px 8px;}"
             "tbody tr{border-bottom:1px solid #222;} td{padding:6px 8px;vertical-align:top;} .ts{white-space:nowrap;color:darkmagenta;padding-right:24px;} .dir{width:54px;color:#bbb;} .kind{width:90px;font-weight:600;} .var{width:130px;color:#bbb;white-space:nowrap;} .hex{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;white-space:pre;color:#ddd;} .summary{color:#ddd;}"
-            ".cat-ping{background:#2b2b2b;} .cat-broadcast{background:#103410;} .cat-known{background:#0e2f0e;} .cat-unknown{background:#401515;} .cat-garbage{background:#2b1f1f;}"
-            ".cat-broadcast .summary,.cat-known .summary{color:#cfeecf;} .cat-unknown .summary,.cat-garbage .summary{color:#ffd0d0;} .cat-ping .summary{color:#ccc;}"
+            ".cat-ping{background:#2b2b2b;} .cat-broadcast{background:#103410;} .cat-ack{background:#2b2e3a;} .cat-known{background:#0e2f0e;} .cat-unknown{background:#401515;} .cat-garbage{background:#2b1f1f;}"
+            ".cat-broadcast .summary,.cat-known .summary{color:#cfeecf;} .cat-unknown .summary,.cat-garbage .summary{color:#ffd0d0;} .cat-ping .summary{color:#ccc;} .cat-ack .summary{color:#cfe9ff;}"
             ".dir-tx.cat-known td,.dir-tx.cat-unknown td{background:#0b1e3a;} .dir-tx .summary,.dir-tx .hex,.dir-tx .kind,.dir-tx .dir{color:#cfe9ff;}"
             ".hex-prev{color:#8fd88f;} .hex-garbage{color:#ffd0d0;} .tag{display:inline-block;min-width:120px;margin-right:8px;} .summary-rest{display:inline-block;}"
         )
@@ -689,14 +710,16 @@ class Rs485Logger:
             "    var showPing = qs('#filter-ping').checked;\n"
             "    var showBcast = qs('#filter-broadcast').checked;\n"
             "    var showKnown = qs('#filter-known').checked;\n"
+            "    var showAck = qs('#filter-ack').checked;\n"
             "    var showUnknown = qs('#filter-unknown').checked;\n"
             "    var varMap = currentVarVisibility();\n"
             "    qsa('tbody tr').forEach(function(tr){\n"
             "      var isPing = tr.classList.contains('cat-ping');\n"
             "      var isBcast = tr.classList.contains('cat-broadcast');\n"
+            "      var isAck = tr.classList.contains('cat-ack');\n"
             "      var isKnown = tr.classList.contains('cat-known');\n"
             "      var isUnknown = tr.classList.contains('cat-unknown');\n"
-            "      var catOk = (isPing?showPing:(isBcast?showBcast:(isKnown?showKnown:(isUnknown?showUnknown:true))));\n"
+            "      var catOk = (isPing?showPing:(isBcast?showBcast:(isAck?showAck:(isKnown?showKnown:(isUnknown?showUnknown:true)))));\n"
             "      var v = tr.getAttribute('data-var');\n"
             "      var varOk = (v? (varMap[v]!==false): true);\n"
             "      tr.style.display = (catOk && varOk)? '':'none';\n"
@@ -704,6 +727,7 @@ class Rs485Logger:
             "    save('helios_rs485_showPing', showPing);\n"
             "    save('helios_rs485_showBcast', showBcast);\n"
             "    save('helios_rs485_showKnown', showKnown);\n"
+            "    save('helios_rs485_showAck', showAck);\n"
             "    save('helios_rs485_showUnknown', showUnknown);\n"
             "    // Persist per-var states\n"
             "    qsa('#var-filters input[type=checkbox]').forEach(function(cb){ save('helios_rs485_var_'+cb.getAttribute('data-var'), !!cb.checked); });\n"
@@ -735,12 +759,14 @@ class Rs485Logger:
             "    var sp = load('helios_rs485_showPing', true);\n"
             "    var sb = load('helios_rs485_showBcast', true);\n"
             "    var sk = load('helios_rs485_showKnown', true);\n"
+            "    var sa = load('helios_rs485_showAck', true);\n"
             "    var su = load('helios_rs485_showUnknown', true);\n"
             "    var pingCb = qs('#filter-ping'); var bcastCb = qs('#filter-broadcast');\n"
-            "    var knownCb = qs('#filter-known'); var unknownCb = qs('#filter-unknown');\n"
+            "    var knownCb = qs('#filter-known'); var ackCb = qs('#filter-ack'); var unknownCb = qs('#filter-unknown');\n"
             "    if(pingCb){pingCb.checked = sp; pingCb.addEventListener('change', apply);}\n"
             "    if(bcastCb){bcastCb.checked = sb; bcastCb.addEventListener('change', apply);}\n"
             "    if(knownCb){knownCb.checked = sk; knownCb.addEventListener('change', apply);}\n"
+            "    if(ackCb){ackCb.checked = sa; ackCb.addEventListener('change', apply);}\n"
             "    if(unknownCb){unknownCb.checked = su; unknownCb.addEventListener('change', apply);}\n"
             "    buildVarFilters();\n"
             "    apply();\n"
@@ -764,7 +790,8 @@ class Rs485Logger:
     <div class=\"meta\">
         <strong>Legend:</strong>
         <span style=\"display:inline-block;padding:2px 6px;background:#103410;color:#cfeecf;margin-left:8px;border-radius:3px;\">Broadcast</span>
-        <span style=\"display:inline-block;padding:2px 6px;background:#0e2f0e;color:#cfeecf;margin-left:8px;border-radius:3px;\">Known</span>
+    <span style=\"display:inline-block;padding:2px 6px;background:#0e2f0e;color:#cfeecf;margin-left:8px;border-radius:3px;\">Known</span>
+    <span style=\"display:inline-block;padding:2px 6px;background:#2b2e3a;color:#cfe9ff;margin-left:8px;border-radius:3px;\">Ack</span>
         <span style=\"display:inline-block;padding:2px 6px;background:#401515;color:#ffd0d0;margin-left:8px;border-radius:3px;\">Unknown</span>
         <span style=\"display:inline-block;padding:2px 6px;background:#2b1f1f;color:#ffd0d0;margin-left:8px;border-radius:3px;\">Garbage</span>
         <span style=\"display:inline-block;padding:2px 6px;background:#2b2b2b;color:#ccc;margin-left:8px;border-radius:3px;\">Ping</span>
@@ -775,6 +802,7 @@ class Rs485Logger:
                     <label style=\"margin-left:8px;\"><input id=\"filter-ping\" type=\"checkbox\" checked> show Ping</label>
                     <label style=\"margin-left:8px;\"><input id=\"filter-broadcast\" type=\"checkbox\" checked> show Broadcast</label>
                     <label style=\"margin-left:8px;\"><input id=\"filter-known\" type=\"checkbox\" checked> show Known</label>
+                    <label style=\"margin-left:8px;\"><input id=\"filter-ack\" type=\"checkbox\" checked> show Ack</label>
                     <label style=\"margin-left:8px;\"><input id=\"filter-unknown\" type=\"checkbox\" checked> show Unknown</label>
                 </span>
                 <div class=\"meta\" id=\"var-filters\" style=\"margin-left:16px; margin-top:8px;\"><strong>Variables:</strong></div>
@@ -801,13 +829,14 @@ class Rs485Logger:
         kind = {
             "ping": "Ping",
             "broadcast": "Broadcast",
+            "ack": "Ack",
             "known": "Known",
             "unknown": "Unknown",
             "garbage": "Garbage",
         }.get(category, category)
         kind_txt = html.escape(kind)
         # Tag spacing: ensure equal spacing after common tags like "ping ok", "broadcast ok", etc.
-        tag_prefixes = ["ping ok", "broadcast ok", "request ok", "response ok", "frame ok"]
+        tag_prefixes = ["ping ok", "broadcast ok", "TX ok", "RX ok", "ack ok", "frame ok"]
         tag_used = None
         for p in tag_prefixes:
             if summary.lower().startswith(p):
@@ -851,23 +880,29 @@ class Rs485Logger:
             ms = [v * 1000.0 for v in ints]
             return f"min {min(ms):.1f} ms — avg {sum(ms)/len(ms):.1f} ms — max {max(ms):.1f} ms"
 
+        # Snapshot current counters
         ping = self._stats.get("ping", {})
         bcast = self._stats.get("broadcast", {})
+        ack = self._stats.get("ack", {})
         known = self._stats.get("known", {})
         unknown = self._stats.get("unknown", {})
         garbage = self._stats.get("garbage", {})
+        tx_all = self._stats.get("tx", {})
+        rx_all = self._stats.get("rx", {})
 
         # Build variable counts section
         try:
-            all_vars = sorted(set(self._var_counts_rx.keys()) | set(self._var_counts_tx.keys()), key=lambda k: (-(self._var_counts_rx.get(k,0)+self._var_counts_tx.get(k,0)), k))
+            all_vars = sorted(
+                set(self._var_counts_rx.keys()) | set(self._var_counts_tx.keys()),
+                key=lambda k: (-(self._var_counts_rx.get(k, 0) + self._var_counts_tx.get(k, 0)), k),
+            )
         except Exception:
             all_vars = []
-        var_lines = []
+        var_lines: List[str] = []
         for vid in all_vars:
             rx = int(self._var_counts_rx.get(vid, 0))
             tx = int(self._var_counts_tx.get(vid, 0))
             total = rx + tx
-            # Map to enum name if possible
             try:
                 name = HeliosVar(vid).name
             except Exception:
@@ -878,25 +913,36 @@ class Rs485Logger:
             var_lines.append(f"<li><code>{label}</code>: RX {rx}, TX {tx}, total {total}</li>")
         vars_html_list = "\n".join(var_lines) if var_lines else "<li>None observed</li>"
 
+        # Compute span since start
+        span_s = max(0.0, time.monotonic() - float(self._start_mono or time.monotonic()))
+        span_h = int(span_s // 3600)
+        span_m = int((span_s % 3600) // 60)
+        span_sec = span_s % 60.0
+        span_str = f"{span_h:02d}:{span_m:02d}:{span_sec:06.3f}"
+
+        # Aligned stats in monospace block
+        lines: List[str] = []
+        lines.append(f"Trace span:          {span_str}")
+        lines.append("")
+        lines.append(f"Ping:           {int(ping.get('count', 0)):6d}    {fmt_intervals(ping.get('intervals', []))}")
+        lines.append(f"Broadcast:      {int(bcast.get('count', 0)):6d}    {fmt_intervals(bcast.get('intervals', []))}")
+        lines.append(f"Ack frames:     {int(ack.get('count', 0)):6d}    {fmt_intervals(ack.get('intervals', []))}")
+        lines.append(f"Known frames:   {int(known.get('count', 0)):6d}    {fmt_intervals(known.get('intervals', []))}")
+        lines.append(f"Unknown frames: {int(unknown.get('count', 0)):6d}    {fmt_intervals(unknown.get('intervals', []))}")
+        lines.append(f"Garbage:        {int(garbage.get('count', 0)):6d}    bytes={int(garbage.get('bytes', 0))}")
+        lines.append("")
+        lines.append(f"All TX frames:  {int(tx_all.get('count', 0)):6d}    {fmt_intervals(tx_all.get('intervals', []))}")
+        lines.append(f"All RX frames:  {int(rx_all.get('count', 0)):6d}    {fmt_intervals(rx_all.get('intervals', []))}")
+        pre_stats = "\n".join(lines)
+
         stats_html = f"""
-    </tbody>
-  </table>
-  <div class=\"meta\">Stopped: {html.escape(stopped)}</div>
-  <div class=\"meta\">Summary:</div>
-  <ul class=\"meta\">
-    <li>Ping: {int(ping.get('count', 0))} events — {fmt_intervals(ping.get('intervals', []))}</li>
-    <li>Broadcast: {int(bcast.get('count', 0))} events — {fmt_intervals(bcast.get('intervals', []))}</li>
-    <li>Known frames: {int(known.get('count', 0))} events — {fmt_intervals(known.get('intervals', []))}</li>
-    <li>Unknown frames: {int(unknown.get('count', 0))} events — {fmt_intervals(unknown.get('intervals', []))}</li>
-    <li>Garbage: {int(garbage.get('count', 0))} chunks, {int(garbage.get('bytes', 0))} bytes</li>
-  </ul>
-  <div class=\"meta\">Variables seen (by frequency):</div>
-  <ul class=\"meta\">
-    {vars_html_list}
-  </ul>
-</body>
-</html>
-"""
+            </tbody>
+          </table>
+          <div class=\"meta\">Stopped: {html.escape(stopped)}</div>
+          <div class=\"meta\">Summary:</div>
+          <pre class=\"meta\" style=\"font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; background:#1a1a1a; color:#ddd; padding:8px; border:1px solid #333; border-radius:4px; white-space:pre;\">{html.escape(pre_stats)}</pre>
+          <div class=\"meta\">Variables seen (by frequency):</div>
+          <ul class=\"meta\">\n    {vars_html_list}\n  </ul>\n</body>\n</html>\n"""
         try:
             self._file.write(stats_html)
             self._file.flush()

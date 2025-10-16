@@ -61,11 +61,7 @@ def decode_raw(raw_path: str, out_html: str | None = None) -> str:
                     var_idx = hex_data[3]
                     payload = hex_data[4:-1]
                     chk = hex_data[-1]
-                    role = 'frame'
-                    if direction == 'TX':
-                        role = 'request' if cmd in (0x00, 0x01) else 'frame'
-                    elif direction == 'RX':
-                        role = 'response' if cmd in (0x00, 0x01) else 'frame'
+                    is_reqresp = cmd in (0x00, 0x01)
                     var_name = None
                     label = None
                     values = None
@@ -82,12 +78,30 @@ def decode_raw(raw_path: str, out_html: str | None = None) -> str:
                             val_txt = f" values={values}"
                         else:
                             val_txt = f" values={values[:8]}…({len(values)})"
-                    suffix = f" | {role}: ID 0x{var_idx:02X} ({label})" if label else ''
-                    summary = f"{role} ok addr=0x{addr:02X} cmd=0x{cmd:02X} var=0x{var_idx:02X} len={plen} chk=0x{chk:02X}{val_txt}{suffix}"
+                    # Suffix with TX/RX role when applicable
+                    role_txt = (('TX' if direction == 'TX' else 'RX') if is_reqresp else 'frame') if label else ''
+                    suffix = f" | {role_txt}: ID 0x{var_idx:02X} ({label})" if label else ''
+                    tag = ('TX ok' if direction == 'TX' else 'RX ok') if is_reqresp else 'frame ok'
+                    summary = f"{tag} addr=0x{addr:02X} cmd=0x{cmd:02X} var=0x{var_idx:02X} len={plen} chk=0x{chk:02X}{val_txt}{suffix}"
                     cat = 'known' if label is not None else 'unknown'
                     logger._write_row(cat, direction, summary, hex_data, var_label=(var_name or f"0x{var_idx:02X}"), var_idx=var_idx)
                 except Exception:
                     logger._write_row('unknown', direction, 'frame ok', hex_data, var_label='')
+            elif kind == 'ack':
+                try:
+                    addr, cmd, plen = hex_data[0], hex_data[1], hex_data[2]
+                    var_idx = hex_data[3]
+                    chk = hex_data[-1]
+                    summary = f"ack ok addr=0x{addr:02X} cmd=0x{cmd:02X} var=0x{var_idx:02X} len={plen} chk=0x{chk:02X}"
+                    # Try to resolve var name for display
+                    try:
+                        var = HeliosVar(var_idx)
+                        var_name = var.name
+                    except Exception:
+                        var_name = None
+                    logger._write_row('ack', direction, summary, hex_data, var_label=(var_name or f"0x{var_idx:02X}"), var_idx=var_idx)
+                except Exception:
+                    logger._write_row('ack', direction, 'ack ok', hex_data, var_label='')
             elif kind == 'garbage':
                 prev_hex = obj.get('prev')
                 combined_hex = ''

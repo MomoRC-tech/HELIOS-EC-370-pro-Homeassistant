@@ -1,3 +1,11 @@
+## 5.2.3 — 2025-10-16
+
+Patch release
+- Logger HTML: Added explicit Ack type (0x05) with its own color and a filter checkbox to hide/show ACK frames.
+- Summary tags: Normalized wording to “TX ok” for requests and “RX ok” for responses; ACK uses “ack ok”.
+- Footer summary: Added trace time span, aligned the statistics in a monospace block, and included overall TX/RX counts with min/avg/max inter-event times.
+- Parser strictness: Enforced exact payload length matching for Var_07 (date=3, time=2) and Var_08 (time=2) to avoid misinterpretation.
+
 ## 5.2.2 — 2025-10-16
 
 Patch release

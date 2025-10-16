@@ -208,8 +208,9 @@ class HeliosBroadcastReader(threading.Thread):
                                     self.coord.update_values({"software_version": ".".join(str(int(v)) for v in vals)})
                             elif var == HeliosVar.Var_07_date_month_year:
                                 # New spec: Var_07 may return either date [day,month,year] or time [hour,minute]
+                                # Strict matching: require exactly 3 bytes for date, exactly 2 for time.
                                 try:
-                                    if len(vals) >= 3:
+                                    if len(vals) == 3:
                                         day, month, year = int(vals[0]), int(vals[1]), int(vals[2])
                                         # Validate plausible ranges
                                         if not (1 <= month <= 12 and 1 <= day <= 31):
@@ -221,14 +222,14 @@ class HeliosBroadcastReader(threading.Thread):
                                             "date_year_source": "device",
                                         })
                                         _publish_clock_telemetry_if_ready()
-                                    elif len(vals) >= 2:
+                                    elif len(vals) == 2:
                                         h0, m0 = int(vals[0]), int(vals[1])
                                         if 0 <= h0 <= 23 and 0 <= m0 <= 59:
                                             self.coord.update_values({"time_str": f"{h0:02d}:{m0:02d}"})
                                             _publish_clock_telemetry_if_ready()
                                 except Exception:
                                     pass
-                            elif var == HeliosVar.Var_08_time_hour_min and len(vals) >= 2:
+                            elif var == HeliosVar.Var_08_time_hour_min and len(vals) == 2:
                                 # Accept only the explicit [hour, minute] form to avoid misreading ACK/status as time
                                 try:
                                     h0, m0 = int(vals[0]), int(vals[1])
