@@ -1,0 +1,75 @@
+name: Release from tag
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+
+      - name: Run tests
+        run: |
+          python -m pytest -q
+
+  release:
+    name: Create GitHub Release
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract release notes from CHANGELOG.md
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          echo "Tag: ${TAG_NAME}"
+          TAG_NO_V="${TAG_NAME#v}"
+          echo "Version (no v): ${TAG_NO_V}"
+
+          awk -v tag="$TAG_NO_V" '
+            BEGIN { f=0 }
+            $0 ~ "^##[[:space:]]*" tag "([[:space:]]|$)" { f=1; print; next }
+            /^##[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+/ { if (f==1) exit }
+            { if (f==1) print }
+          ' CHANGELOG.md > RELEASE_NOTES.md || true
+
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "Could not find release notes for ${TAG_NO_V} in CHANGELOG.md; using fallback." >&2
+            echo "# ${TAG_NAME}" > RELEASE_NOTES.md
+            echo >> RELEASE_NOTES.md
+            head -n 100 CHANGELOG.md >> RELEASE_NOTES.md
+          fi
+
+          echo "--- RELEASE NOTES ---"
+          cat RELEASE_NOTES.md
+          echo "---------------------"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: RELEASE_NOTES.md
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

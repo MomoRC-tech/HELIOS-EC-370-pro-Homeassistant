@@ -16,21 +16,41 @@ class HeliosCoordinator:
         self.data: Dict[str, Any] = {}
         self.entities: List[Any] = []
         self.last_ping_time: float = 0.0
+        self.last_ping_addr: int | None = None
         self.send_slot_active: bool = False
         self.send_slot_expires: float = 0.0
         self.send_slot_event = threading.Event()
         # Optional callback used by the debug scanner to receive parsed var responses
         self.debug_var_callback = None  # type: ignore[assignment]
+        # Addresses that are permitted to open a TX send slot when they emit a ping.
+        # Default to our client address only (CLIENT_ID / 0x11).
+        try:
+            self.allowed_ping_addrs = {int(CLIENT_ID)}
+        except Exception:
+            self.allowed_ping_addrs = set()
 
     def register_entity(self, entity):
         self.entities.append(entity)
 
-    def mark_ping(self):
+    def mark_ping(self, addr: int | None = None):
+        """Record a ping from addr and open a send slot if addr is allowed.
+
+        If addr is None, treat as unknown and allow by default (backward compatibility).
+        """
         now = time.time()
         self.last_ping_time = now
+        self.last_ping_addr = int(addr) if addr is not None else None
+        allow = True if addr is None else (int(addr) in getattr(self, 'allowed_ping_addrs', {0x10}))
+        if not allow:
+            try:
+                _LOGGER.debug("Ping seen from addr 0x%02X but not allowed for send slot", int(addr or 0))
+            except Exception:
+                _LOGGER.debug("Ping seen from disallowed addr (None)")
+            return
         self.send_slot_active = True
         self.send_slot_expires = now + 0.08
         self.send_slot_event.set()
+        # Note: on-ping opportunistic date/time probing disabled by user request
 
     def tick(self):
         if self.send_slot_active and time.time() > self.send_slot_expires:
@@ -61,9 +81,36 @@ class HeliosCoordinatorWithQueue(HeliosCoordinator):
     def __init__(self, hass):
         super().__init__(hass)
         self.tx_queue = deque()
+        # Per-variable last-queued timestamps for read throttling
+        self._last_read_ts: Dict[int, float] = {}
+        # Last time we opportunistically probed date/time on ping
+        self._last_dt_probe_ts: float = 0.0
 
     # ---------- TX QUEUE ----------
     def queue_frame(self, frame: bytes):
+        # Throttle read requests for certain variables to avoid hammering the bus
+        try:
+            if isinstance(frame, (bytes, bytearray)) and len(frame) >= 5:
+                addr, cmd, plen, var_idx = frame[0], frame[1], frame[2], frame[3]
+                if cmd == 0x00:  # read
+                    now = time.time()
+                    min_interval = 0.0
+                    if var_idx == int(HeliosVar.Var_3A_sensors_temp):
+                        # Target ~30s cadence; allow if older than 25s
+                        min_interval = 25.0
+                    elif var_idx in (int(HeliosVar.Var_07_date_month_year), int(HeliosVar.Var_08_time_hour_min)):
+                        # Avoid spamming date/time reads — at most every 5 seconds implicitly
+                        min_interval = 5.0
+                    if min_interval > 0.0:
+                        last = float(self._last_read_ts.get(var_idx, 0.0))
+                        if now - last < min_interval:
+                            _LOGGER.debug("Throttle read var 0x%02X (%.1fs < %.1fs)", var_idx, now - last, min_interval)
+                            return
+                        self._last_read_ts[var_idx] = now
+        except Exception:
+            # Never block if throttling logic fails
+            pass
+
         self.tx_queue.append(frame)
         _LOGGER.debug("Queued frame: %s", frame.hex(" "))
 

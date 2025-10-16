@@ -110,15 +110,21 @@ def try_parse_var3a(buf: bytearray) -> Optional[Dict[str, Any]]:
     )
     return values
 
-def try_parse_ping(buf: bytearray) -> bool:
+def try_parse_ping(buf: bytearray) -> Optional[int]:
+    """Detect a 4-byte ping frame and return its address byte.
+
+    Frame layout: [addr, 0x00, 0x00, chk] where chk = (addr + 0x00 + 0x00 + 1) & 0xFF.
+    On success, consumes the 4 bytes from the buffer and returns the addr.
+    Returns None if no valid ping is at the head of the buffer.
+    """
     if len(buf) < 4:
-        return False
+        return None
     b0, b1, b2, b3 = buf[0], buf[1], buf[2], buf[3]
     chk = (b0 + b1 + b2 + 1) & 0xFF
     if b1 == 0x00 and b2 == 0x00 and b3 == chk:
         del buf[:4]
-        return True
-    return False
+        return int(b0)
+    return None
 
 
 def calendar_pack_levels48_to24(levels48: List[int]) -> bytes:

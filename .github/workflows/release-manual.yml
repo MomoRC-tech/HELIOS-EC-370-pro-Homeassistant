@@ -1,0 +1,51 @@
+name: Prepare release (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g., 5.2.1)'
+        required: true
+      body_file:
+        description: 'Optional path to release notes file (relative to repo root)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update manifest.json version
+        run: |
+          set -euo pipefail
+          v="${{ github.event.inputs.version }}"
+          echo "Setting manifest version to $v"
+          jq --arg v "$v" '.version=$v' helios_pro_ventilation/manifest.json > manifest.tmp && mv manifest.tmp helios_pro_ventilation/manifest.json
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add helios_pro_ventilation/manifest.json
+          git commit -m "chore: bump version to $v [skip ci]" || echo "No changes to commit"
+
+      - name: Push changes and tag
+        run: |
+          set -euo pipefail
+          v="${{ github.event.inputs.version }}"
+          git push || true
+          git tag -a "v${v}" -m "Release v${v}" || echo "Tag already exists"
+          git push origin "v${v}" || echo "Tag push skipped"
+
+      - name: Optionally create GitHub Release directly
+        if: ${{ github.event.inputs.body_file != '' }}
+        uses: ncipollo/release-action@v1
+        with:
+          tag: v${{ github.event.inputs.version }}
+          name: v${{ github.event.inputs.version }}
+          bodyFile: ${{ github.event.inputs.body_file }}
+          draft: false
+          prerelease: false

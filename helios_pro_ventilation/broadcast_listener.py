@@ -61,8 +61,9 @@ class HeliosBroadcastReader(threading.Thread):
                 while made_progress:
                     made_progress = False
 
-                    if try_parse_ping(self.buf):
-                        self.coord.mark_ping()
+                    ping_addr = try_parse_ping(self.buf)
+                    if ping_addr is not None:
+                        self.coord.mark_ping(ping_addr)
                         # _LOGGER.debug("Ping detected from Helios bus → send slot opened for 0.08s")
                         made_progress = True
                         continue
@@ -132,6 +133,12 @@ class HeliosBroadcastReader(threading.Thread):
                                 This avoids leaving diagnostic sensors Unavailable until the hourly drift task runs.
                                 """
                                 try:
+                                    # Prefer HA timezone utilities when available
+                                    try:
+                                        from homeassistant.util import dt as dt_util  # type: ignore
+                                        _ha_dt = True
+                                    except Exception:
+                                        _ha_dt = False
                                     import datetime as _dt
                                     date_s = str(self.coord.data.get("date_str") or "")
                                     time_s = str(self.coord.data.get("time_str") or "")
@@ -139,8 +146,12 @@ class HeliosBroadcastReader(threading.Thread):
                                         return
                                     y, mo, d = [int(x) for x in date_s.split("-")]
                                     h, mi = [int(x) for x in time_s.split(":" )]
-                                    dev_dt = _dt.datetime(y, mo, d, h, mi)
-                                    now_dt = _dt.datetime.now()
+                                    if _ha_dt:
+                                        now_dt = dt_util.as_local(dt_util.utcnow())  # type: ignore
+                                        dev_dt = _dt.datetime(y, mo, d, h, mi).replace(tzinfo=now_dt.tzinfo)
+                                    else:
+                                        now_dt = _dt.datetime.now()
+                                        dev_dt = _dt.datetime(y, mo, d, h, mi)
                                     drift = abs((now_dt - dev_dt).total_seconds()) / 60.0
                                     max_drift = max(0, int(getattr(self.coord, 'time_sync_max_drift_min', 20)))
                                     self.coord.update_values({
@@ -191,33 +202,50 @@ class HeliosBroadcastReader(threading.Thread):
                                 except Exception:
                                     # Fallback to string of values
                                     self.coord.update_values({"software_version": ".".join(str(int(v)) for v in vals)})
-                            elif var == HeliosVar.Var_07_date_month_year and len(vals) >= 3:
-                                day, month, year = int(vals[0]), int(vals[1]), int(vals[2])
-                                self.coord.update_values({
-                                    "date_str": f"{2000+year:04d}-{month:02d}-{day:02d}" if year < 100 else f"{year:04d}-{month:02d}-{day:02d}"
-                                })
-                                _publish_clock_telemetry_if_ready()
-                            elif var == HeliosVar.Var_08_time_hour_min and len(vals) >= 1:
-                                # Prefer [hour, minute] format; fall back to single value as minutes-of-day if device uses 16-bit encoding
-                                hour, minute = None, None
+                            elif var == HeliosVar.Var_07_date_month_year and len(vals) >= 2:
+                                # Accept either 3-byte [day, month, year] or 2-byte [month, day] (no year)
                                 try:
-                                    if len(vals) >= 2:
-                                        h0, m0 = int(vals[0]), int(vals[1])
-                                        if 0 <= h0 <= 23 and 0 <= m0 <= 59:
-                                            hour, minute = h0, m0
-                                        else:
-                                            # Some bridges/devices report time as 16-bit minutes-of-day split over two bytes
-                                            mod = max(0, min(24 * 60 - 1, (m0 << 8) | (h0 & 0xFF)))
-                                            hour, minute = mod // 60, mod % 60
+                                    if len(vals) >= 3:
+                                        day, month, year = int(vals[0]), int(vals[1]), int(vals[2])
+                                        yyyy = (2000 + year) if year < 100 else year
+                                        self.coord.update_values({
+                                            "date_str": f"{yyyy:04d}-{month:02d}-{day:02d}",
+                                            "_device_year": int(yyyy),
+                                            "date_year_source": "device",
+                                        })
                                     else:
-                                        # Fallback: a single 16-bit minutes-of-day value (0..1439)
-                                        mod = max(0, min(24 * 60 - 1, int(vals[0])))
-                                        hour, minute = mod // 60, mod % 60
+                                        # 2-byte form interpreted as [month, day]; infer year
+                                        month, day = int(vals[0]), int(vals[1])
+                                        yyyy = None
+                                        try:
+                                            prev = self.coord.data.get("_device_year")
+                                            if isinstance(prev, int) and 2000 <= prev <= 2255:
+                                                yyyy = prev
+                                        except Exception:
+                                            yyyy = None
+                                        if yyyy is None:
+                                            try:
+                                                from homeassistant.util import dt as dt_util  # type: ignore
+                                                yyyy = int(dt_util.as_local(dt_util.utcnow()).year)  # type: ignore
+                                            except Exception:
+                                                import datetime as _dt
+                                                yyyy = int(_dt.datetime.now().year)
+                                        self.coord.update_values({
+                                            "date_str": f"{int(yyyy):04d}-{month:02d}-{day:02d}",
+                                            "date_year_source": "provisional" if "_device_year" not in self.coord.data else "device",
+                                        })
                                 except Exception:
                                     pass
-                                if hour is not None and minute is not None:
-                                    self.coord.update_values({"time_str": f"{hour:02d}:{minute:02d}"})
-                                    _publish_clock_telemetry_if_ready()
+                                _publish_clock_telemetry_if_ready()
+                            elif var == HeliosVar.Var_08_time_hour_min and len(vals) >= 2:
+                                # Accept only the explicit [hour, minute] form to avoid misreading ACK/status as time
+                                try:
+                                    h0, m0 = int(vals[0]), int(vals[1])
+                                    if 0 <= h0 <= 23 and 0 <= m0 <= 59:
+                                        self.coord.update_values({"time_str": f"{h0:02d}:{m0:02d}"})
+                                        _publish_clock_telemetry_if_ready()
+                                except Exception:
+                                    pass
                             elif var == HeliosVar.Var_49_nachlaufzeit and vals:
                                 self.coord.update_values({"nachlaufzeit_s": int(vals[0])})
                             elif var == HeliosVar.Var_16_fan_1_voltage and len(vals) >= 2:
@@ -291,6 +319,8 @@ class HeliosBroadcastReader(threading.Thread):
         last_v08 = 0.0
         last_time_sync = 0.0
         last_dt_retry = 0.0
+        dt_retry_count_date = 0  # limit startup assists to 10 attempts per var
+        dt_retry_count_time = 0
         # Hourly-ish vars
         last_hourly = 0.0
         # One-time at startup vars
@@ -346,24 +376,28 @@ class HeliosBroadcastReader(threading.Thread):
                     self.coord.queue_frame(frame)
                 last_v08 = now
 
-            # Startup assist: if date/time not yet populated, retry reads every 30s until available
+            # Startup assist: if date/time not yet populated, retry reads every 30s (up to 10 attempts per var)
             try:
                 if now - last_dt_retry >= 30.0:
                     date_ok = isinstance(self.coord.data.get("date_str"), str) and len(self.coord.data.get("date_str")) >= 8
                     time_ok = isinstance(self.coord.data.get("time_str"), str) and len(self.coord.data.get("time_str")) >= 4
-                    if not (date_ok and time_ok):
+                    # Queue only what is missing
+                    if not date_ok and dt_retry_count_date < 10:
                         self.coord.queue_frame(self._build_read_request(HeliosVar.Var_07_date_month_year))
+                        dt_retry_count_date += 1
+                    if not time_ok and dt_retry_count_time < 10:
                         self.coord.queue_frame(self._build_read_request(HeliosVar.Var_08_time_hour_min))
-                        # Expose a friendly state text
-                        try:
-                            self.coord.update_values({"device_date_time_state": "loading"})
-                        except Exception:
-                            pass
-                    else:
-                        try:
+                        dt_retry_count_time += 1
+                    # Update state
+                    try:
+                        if date_ok and time_ok:
                             self.coord.update_values({"device_date_time_state": "ok"})
-                        except Exception:
-                            pass
+                        else:
+                            # If either missing and we still have retries, keep loading; else unknown
+                            any_retries_left = ((not date_ok and dt_retry_count_date < 10) or (not time_ok and dt_retry_count_time < 10))
+                            self.coord.update_values({"device_date_time_state": "loading" if any_retries_left else "unknown"})
+                    except Exception:
+                        pass
                     last_dt_retry = now
             except Exception:
                 pass
@@ -372,11 +406,18 @@ class HeliosBroadcastReader(threading.Thread):
             try:
                 if now - last_time_sync >= 3600.0:
                     import datetime as _dt
+                    try:
+                        from homeassistant.util import dt as dt_util  # type: ignore
+                        _ha_dt = True
+                    except Exception:
+                        _ha_dt = False
                     date_s = str(self.coord.data.get("date_str") or "")
                     time_s = str(self.coord.data.get("time_str") or "")
                     if not date_s or not time_s:
-                        self.coord.queue_frame(self._build_read_request(HeliosVar.Var_07_date_month_year))
-                        self.coord.queue_frame(self._build_read_request(HeliosVar.Var_08_time_hour_min))
+                        if not date_s:
+                            self.coord.queue_frame(self._build_read_request(HeliosVar.Var_07_date_month_year))
+                        if not time_s:
+                            self.coord.queue_frame(self._build_read_request(HeliosVar.Var_08_time_hour_min))
                         try:
                             self.coord.update_values({"device_date_time_state": "unknown"})
                         except Exception:
@@ -385,8 +426,12 @@ class HeliosBroadcastReader(threading.Thread):
                         try:
                             y, mo, d = [int(x) for x in date_s.split("-")]
                             h, mi = [int(x) for x in time_s.split(":")]
-                            dev_dt = _dt.datetime(y, mo, d, h, mi)
-                            now_dt = _dt.datetime.now()
+                            if _ha_dt:
+                                now_dt = dt_util.as_local(dt_util.utcnow())  # type: ignore
+                                dev_dt = _dt.datetime(y, mo, d, h, mi).replace(tzinfo=now_dt.tzinfo)
+                            else:
+                                now_dt = _dt.datetime.now()
+                                dev_dt = _dt.datetime(y, mo, d, h, mi)
                             drift = abs((now_dt - dev_dt).total_seconds()) / 60.0
                             max_drift = max(0, int(getattr(self.coord, 'time_sync_max_drift_min', 20)))
                             # Publish drift and in_sync status

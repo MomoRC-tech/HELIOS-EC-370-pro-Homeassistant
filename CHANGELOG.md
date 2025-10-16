@@ -1,3 +1,11 @@
+## 5.2.1 — 2025-10-16
+
+Patch release
+- Send-slot gating is now address-aware and strict: a TX send slot opens only on pings from our client address (0x11). Pings from other addresses (e.g., 0x10) no longer open the slot. This reduces unintended contention when multiple devices are present on the bus.
+- Parser: `try_parse_ping()` returns the ping source address for diagnostics and gating instead of a boolean.
+- Listener: passes the parsed ping address to the coordinator’s `mark_ping(addr)`.
+- Docs: Updated to reflect address-aware gating behavior.
+
 ## 5.0.2
 
 Patch release

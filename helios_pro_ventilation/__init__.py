@@ -398,9 +398,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         hass.services.async_register(DOMAIN, "set_device_datetime", handle_set_device_datetime, schema=SERVICE_SET_DEVICE_DATETIME_SCHEMA)
 
         async def handle_sync_device_time(call):
-            # Use HA's local time for best alignment with user expectations
-            import datetime as _dt
-            now = _dt.datetime.now()
+            # Use Home Assistant's configured local time zone for best alignment with user expectations
+            try:
+                from homeassistant.util import dt as dt_util  # type: ignore
+                # dt_util.utcnow() -> aware UTC; as_local -> aware local in HA TZ
+                now = dt_util.as_local(dt_util.utcnow())
+            except Exception:
+                # Fallback to system local time if dt_util isn't available (e.g., unit tests)
+                import datetime as _dt
+                now = _dt.datetime.now()
             y, mo, d = now.year, now.month, now.day
             h, mi = now.hour, now.minute
             for v in hass.data.get(DOMAIN, {}).values():

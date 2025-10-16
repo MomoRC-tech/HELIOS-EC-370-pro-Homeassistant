@@ -36,6 +36,16 @@ def test_html_header_footer_and_ping(tmp_path):
         html = f.read()
     assert "<table>" in html and "</table>" in html
     assert "Legend:" in html
+    # Filter checkboxes present (ping/broadcast/known/unknown)
+    assert 'id="filter-ping"' in html
+    assert 'id="filter-broadcast"' in html
+    assert 'id="filter-known"' in html
+    assert 'id="filter-unknown"' in html
+    # JS keys/selectors should be present for persistence and toggling
+    assert 'helios_rs485_showPing' in html
+    assert 'helios_rs485_showBcast' in html
+    assert 'helios_rs485_showKnown' in html
+    assert 'helios_rs485_showUnknown' in html
     assert re.search(r"<td class=\"kind\">Ping</td>", html)
     assert "Stopped:" in html and "Summary:" in html
 

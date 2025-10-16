@@ -169,6 +169,7 @@ Diagnostic sensors (calendar)
 
 Send slots and bus pings
 - Writes are only sent in a short window after a ping is seen on the bus. The integration tracks `last_ping_time` and toggles a `send_slot_active` flag; the sender thread drains the queue during this window.
+- Address-aware gating: a send slot opens only when a ping from our client address (0x11) is observed. Pings from other addresses do not open a send slot.
 
 Polling strategy
 - Temperatures (Var 0x3A): ~every 30 seconds.
