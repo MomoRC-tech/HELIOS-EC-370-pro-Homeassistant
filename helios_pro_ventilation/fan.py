@@ -43,7 +43,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
 class HeliosFan(FanEntity):
     _attr_should_poll = False
-    _attr_supported_features = FanEntityFeature.SET_SPEED | FanEntityFeature.PRESET_MODE
+    _attr_supported_features = (
+        FanEntityFeature.SET_SPEED | FanEntityFeature.PRESET_MODE |
+        getattr(FanEntityFeature, "TURN_ON", 0) | getattr(FanEntityFeature, "TURN_OFF", 0)
+    )
     _attr_preset_modes = PRESET_MODES
     _attr_name = "Helios Lüfter"
 
