@@ -145,7 +145,7 @@ The integration will automatically reload with the new settings.
   - Stufe 1–4 Spannungen Zuluft/Abluft (Var 0x16..0x19)
   - Nachlaufzeit (Sekunden) (Var 0x49)
   - Software Version (Var 0x48)
-  - Datum / Uhrzeit (Var 0x07 / 0x08)
+  - Datum / Uhrzeit (reads via Var 0x07 responses; time may also arrive under Var 0x07)
 - Switches:
   - Debug, one‑shot variable scan (stable id: `switch.helios_ec_pro_variablen_scan_debug`)
   - Lüftung EIN/AUS (Stufe 1): simple ON/OFF for manual level 1 vs level 0 (for widgets)
@@ -248,7 +248,7 @@ Example (read Var_3A):
 - `calendar_copy_day` (source_day: 0..6, preset: none|weekday, all_days: bool, target_days: [0..6])
   - If `preset=weekday`, copies to Tue–Fri; if `all_days=true`, copies to Mon–Sun and ignores `target_days`.
   - If the source calendar isn’t loaded yet, the integration queues a read and skips copying (try again afterward).
- - `set_device_datetime` (year, month, day, hour, minute) — writes the device’s internal date/time.
+- `set_device_datetime` (year, month, day, hour, minute) — writes the device’s internal date/time.
  - `sync_device_time` — sets the device clock to the Home Assistant host’s current local time.
 
 Options (Configure → Options)
@@ -259,6 +259,11 @@ Sensor
 - Diagnostic sensor `device_clock_drift_min` (disabled by default): shows current drift (minutes) between device clock and HA host time.
  - Diagnostic binary sensor `device_clock_in_sync` (disabled by default): true if drift <= threshold.
  - Text sensor `Geräteuhr Status` indicates "unknown/loading/ok".
+
+Date/time protocol notes
+- Reads: The device may provide date and/or time responses under Var 0x07. This integration reads Var 0x07 only; it does not issue Var 0x08 read requests.
+- Writes: Time writes to Var 0x08 are supported, but read-backs for Var 0x08 are not queued; confirmation relies on subsequent Var 0x07 reads.
+- ACK/status frames are logged only and never interpreted as values.
 
 ---
 

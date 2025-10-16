@@ -207,6 +207,18 @@ def try_parse_var_generic(buf: bytearray) -> Optional[Dict[str, Any]]:
         return None
     frame = bytes(buf[:total])
     var_idx = frame[3]
+    # If this is an ACK/status frame (cmd == 0x05), consume it and return a marker, but do not parse values
+    if cmd == 0x05:
+        calc = _checksum(frame[:-1])
+        if frame[-1] != calc:
+            buf.pop(0)
+            return None
+        del buf[:total]
+        try:
+            var = HeliosVar(var_idx)
+        except Exception:
+            var = None  # type: ignore[assignment]
+        return {"ack": True, "var": var, "_frame_ts": time.time()}
     # Guard: skip calendar indices (0x00..0x06) here to let try_parse_calendar handle them,
     # especially for frames with address 0x11 and cmd 0x01 which carry meta+24 bytes.
     try:

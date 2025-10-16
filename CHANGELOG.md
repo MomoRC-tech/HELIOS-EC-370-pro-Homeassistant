@@ -1,3 +1,12 @@
+## 5.2.2 — 2025-10-16
+
+Patch release
+- Protocol/date-time: Removed all Var_08 (time) read requests. Date/time reads now use Var_07 only; devices may reply with either date [day,month,year] or time [hour,minute] under Var_07, and both forms are handled.
+- ACK handling: Generic ACK/status frames are now logged only and not interpreted as data, avoiding accidental time/date updates.
+- Listener: Startup/date-time retry and hourly polling updated to queue only Var_07; drift and exception paths no longer enqueue Var_08 reads.
+- Coordinator: Time writes (Var_08) remain supported, but read-backs for Var_08 are no longer queued; confirmation relies on Var_07 reads.
+- Docs: Updated to reflect Var_07-only read behavior and ACK log-only policy.
+
 ## 5.2.1 — 2025-10-16
 
 Patch release

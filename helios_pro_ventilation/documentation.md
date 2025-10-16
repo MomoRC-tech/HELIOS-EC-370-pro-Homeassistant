@@ -130,19 +130,22 @@ Services
 Time synchronization
 - Services:
 	- `helios_pro_ventilation.set_device_datetime` (year, month, day, hour, minute)
-		- Writes Var_07 (date) and Var_08 (time) in a single send-slot sequence, then queues a read-back.
+		- Writes Var_07 (date) and Var_08 (time) in a single send-slot sequence.
+		- Read-back confirmation uses Var_07 only; Var_08 read requests are not issued.
 	- `helios_pro_ventilation.sync_device_time`
 		- Sets the device clock to the HA host’s current local time.
 - Options (Configure → Options):
 	- `auto_time_sync` (bool): when enabled, the integration checks the device clock hourly and corrects it if the drift exceeds the threshold.
 	- `time_sync_max_drift_min` (int, default 20): drift threshold in minutes to trigger a correction.
 - Sensor:
-	- `device_clock_drift_min` (diagnostic, disabled by default): absolute difference (in minutes) between device and HA time based on the latest reads of Var_07/Var_08.
+	- `device_clock_drift_min` (diagnostic, disabled by default): absolute difference (in minutes) between device and HA time based on the latest Var_07 date/time responses.
 	- `device_clock_in_sync` (diagnostic, disabled by default): boolean, true if drift <= threshold.
 	- `device_date_time_state` (text): "unknown", "loading", or "ok" based on the current read status.
 - Notes:
+	- Reads: The device may return either date [day,month,year] or time [hour,minute] as Var_07 responses. Both are recognized. The integration does not enqueue Var_08 reads.
 	- Writes occur during send slots; if no ping is observed, they’ll be sent once a window opens.
 	- Time zone: by default, host local time is used to match user expectations.
+	- ACK/status frames from the device are logged only and never interpreted as values.
 
 Calendar editor UI
 - You can manage the weekly schedule with a built-in editor:

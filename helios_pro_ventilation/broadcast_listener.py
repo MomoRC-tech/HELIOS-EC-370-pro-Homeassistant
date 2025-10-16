@@ -115,6 +115,10 @@ class HeliosBroadcastReader(threading.Thread):
 
                     generic = try_parse_var_generic(self.buf)
                     if generic:
+                        # Skip ACK-only frames (cmd==0x05), they are just logged and not mapped
+                        if generic.get("ack"):
+                            made_progress = True
+                            continue
                         # Forward to optional debug callback first
                         cb = getattr(self.coord, "debug_var_callback", None)
                         if callable(cb):
@@ -202,41 +206,28 @@ class HeliosBroadcastReader(threading.Thread):
                                 except Exception:
                                     # Fallback to string of values
                                     self.coord.update_values({"software_version": ".".join(str(int(v)) for v in vals)})
-                            elif var == HeliosVar.Var_07_date_month_year and len(vals) >= 2:
-                                # Accept either 3-byte [day, month, year] or 2-byte [month, day] (no year)
+                            elif var == HeliosVar.Var_07_date_month_year:
+                                # New spec: Var_07 may return either date [day,month,year] or time [hour,minute]
                                 try:
                                     if len(vals) >= 3:
                                         day, month, year = int(vals[0]), int(vals[1]), int(vals[2])
+                                        # Validate plausible ranges
+                                        if not (1 <= month <= 12 and 1 <= day <= 31):
+                                            raise ValueError("invalid day/month in Var_07")
                                         yyyy = (2000 + year) if year < 100 else year
                                         self.coord.update_values({
-                                            "date_str": f"{yyyy:04d}-{month:02d}-{day:02d}",
+                                            "date_str": f"{int(yyyy):04d}-{month:02d}-{day:02d}",
                                             "_device_year": int(yyyy),
                                             "date_year_source": "device",
                                         })
-                                    else:
-                                        # 2-byte form interpreted as [month, day]; infer year
-                                        month, day = int(vals[0]), int(vals[1])
-                                        yyyy = None
-                                        try:
-                                            prev = self.coord.data.get("_device_year")
-                                            if isinstance(prev, int) and 2000 <= prev <= 2255:
-                                                yyyy = prev
-                                        except Exception:
-                                            yyyy = None
-                                        if yyyy is None:
-                                            try:
-                                                from homeassistant.util import dt as dt_util  # type: ignore
-                                                yyyy = int(dt_util.as_local(dt_util.utcnow()).year)  # type: ignore
-                                            except Exception:
-                                                import datetime as _dt
-                                                yyyy = int(_dt.datetime.now().year)
-                                        self.coord.update_values({
-                                            "date_str": f"{int(yyyy):04d}-{month:02d}-{day:02d}",
-                                            "date_year_source": "provisional" if "_device_year" not in self.coord.data else "device",
-                                        })
+                                        _publish_clock_telemetry_if_ready()
+                                    elif len(vals) >= 2:
+                                        h0, m0 = int(vals[0]), int(vals[1])
+                                        if 0 <= h0 <= 23 and 0 <= m0 <= 59:
+                                            self.coord.update_values({"time_str": f"{h0:02d}:{m0:02d}"})
+                                            _publish_clock_telemetry_if_ready()
                                 except Exception:
                                     pass
-                                _publish_clock_telemetry_if_ready()
                             elif var == HeliosVar.Var_08_time_hour_min and len(vals) >= 2:
                                 # Accept only the explicit [hour, minute] form to avoid misreading ACK/status as time
                                 try:
@@ -314,13 +305,11 @@ class HeliosBroadcastReader(threading.Thread):
         last_v3a = 0.0
         last_v10 = 0.0
         last_v60 = 0.0
-        # Date/time more frequent polling
+        # Date/time more frequent polling (Var_07 only; Var_08 read not supported)
         last_v07 = 0.0
-        last_v08 = 0.0
         last_time_sync = 0.0
         last_dt_retry = 0.0
-        dt_retry_count_date = 0  # limit startup assists to 10 attempts per var
-        dt_retry_count_time = 0
+        dt_retry_count_date = 0  # limit startup assists to 10 attempts (Var_07 only)
         # Hourly-ish vars
         last_hourly = 0.0
         # One-time at startup vars
@@ -370,31 +359,24 @@ class HeliosBroadcastReader(threading.Thread):
                 if hasattr(self.coord, 'queue_frame'):
                     self.coord.queue_frame(frame)
                 last_v07 = now
-            if now - last_v08 >= 600.0:
-                frame = self._build_read_request(HeliosVar.Var_08_time_hour_min)
-                if hasattr(self.coord, 'queue_frame'):
-                    self.coord.queue_frame(frame)
-                last_v08 = now
+            # Var_08 polling removed; time is expected to arrive with Var_07 responses
 
             # Startup assist: if date/time not yet populated, retry reads every 30s (up to 10 attempts per var)
             try:
                 if now - last_dt_retry >= 30.0:
                     date_ok = isinstance(self.coord.data.get("date_str"), str) and len(self.coord.data.get("date_str")) >= 8
                     time_ok = isinstance(self.coord.data.get("time_str"), str) and len(self.coord.data.get("time_str")) >= 4
-                    # Queue only what is missing
-                    if not date_ok and dt_retry_count_date < 10:
+                    # Queue only Var_07 when either is missing; device may provide both date/time in responses
+                    if (not date_ok or not time_ok) and dt_retry_count_date < 10:
                         self.coord.queue_frame(self._build_read_request(HeliosVar.Var_07_date_month_year))
                         dt_retry_count_date += 1
-                    if not time_ok and dt_retry_count_time < 10:
-                        self.coord.queue_frame(self._build_read_request(HeliosVar.Var_08_time_hour_min))
-                        dt_retry_count_time += 1
                     # Update state
                     try:
                         if date_ok and time_ok:
                             self.coord.update_values({"device_date_time_state": "ok"})
                         else:
                             # If either missing and we still have retries, keep loading; else unknown
-                            any_retries_left = ((not date_ok and dt_retry_count_date < 10) or (not time_ok and dt_retry_count_time < 10))
+                            any_retries_left = ((not date_ok or not time_ok) and dt_retry_count_date < 10)
                             self.coord.update_values({"device_date_time_state": "loading" if any_retries_left else "unknown"})
                     except Exception:
                         pass
@@ -414,10 +396,7 @@ class HeliosBroadcastReader(threading.Thread):
                     date_s = str(self.coord.data.get("date_str") or "")
                     time_s = str(self.coord.data.get("time_str") or "")
                     if not date_s or not time_s:
-                        if not date_s:
-                            self.coord.queue_frame(self._build_read_request(HeliosVar.Var_07_date_month_year))
-                        if not time_s:
-                            self.coord.queue_frame(self._build_read_request(HeliosVar.Var_08_time_hour_min))
+                        self.coord.queue_frame(self._build_read_request(HeliosVar.Var_07_date_month_year))
                         try:
                             self.coord.update_values({"device_date_time_state": "unknown"})
                         except Exception:
@@ -453,7 +432,6 @@ class HeliosBroadcastReader(threading.Thread):
                                     _LOGGER.debug("Auto time sync set failed: %s", _exc)
                         except Exception:
                             self.coord.queue_frame(self._build_read_request(HeliosVar.Var_07_date_month_year))
-                            self.coord.queue_frame(self._build_read_request(HeliosVar.Var_08_time_hour_min))
                     last_time_sync = now
             except Exception as _exc:
                 _LOGGER.debug("Time sync drift check failed: %s", _exc)
@@ -465,9 +443,9 @@ class HeliosBroadcastReader(threading.Thread):
                     HeliosVar.Var_37_min_fan_level,
                     HeliosVar.Var_38_change_filter,
                     HeliosVar.Var_49_nachlaufzeit,
-                    # Also read device date/time early so sensors populate quickly
+                    # Also read device date early so sensors populate quickly (time follows via Var_07 responses)
                     HeliosVar.Var_07_date_month_year,
-                    HeliosVar.Var_08_time_hour_min,
+                    # HeliosVar.Var_08_time_hour_min removed as Var_08 read not supported
                 ):
                     frame = self._build_read_request(var)
                     if hasattr(self.coord, 'queue_frame'):
@@ -511,7 +489,6 @@ class HeliosBroadcastReader(threading.Thread):
                     HeliosVar.Var_1E_bypass1_temp,
                     HeliosVar.Var_1F_frostschutz,
                     HeliosVar.Var_07_date_month_year,
-                    HeliosVar.Var_08_time_hour_min,
                     HeliosVar.Var_16_fan_1_voltage,
                     HeliosVar.Var_17_fan_2_voltage,
                     HeliosVar.Var_18_fan_3_voltage,

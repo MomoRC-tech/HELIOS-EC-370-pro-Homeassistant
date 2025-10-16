@@ -302,19 +302,23 @@ class HeliosCoordinatorWithQueue(HeliosCoordinator):
         _LOGGER.info("HeliosPro: queued device date set to %04d-%02d-%02d → %s", int(year), m, d, frame.hex(" "))
 
     def set_device_time(self, hour: int, minute: int):
-        """Set device time (Var_08) to hour/minute (local)."""
+        """Set device time (Var_08) to hour/minute (local).
+
+        Note: Per updated spec, we do not issue any Var_08 read requests; confirmation
+        will arrive alongside Var_07 responses when polled, or via subsequent Var_07 reads.
+        """
         h = max(0, min(23, int(hour)))
         mi = max(0, min(59, int(minute)))
         frame = self._build_write_var(HeliosVar.Var_08_time_hour_min, [h, mi])
         self.queue_frame(frame)
-        # read-back for confirmation on next slot
-        self.queue_frame(self._build_read_request(HeliosVar.Var_08_time_hour_min))
+        # Do not queue Var_08 read-back (unsupported); optionally rely on Var_07 reads elsewhere
         _LOGGER.info("HeliosPro: queued device time set to %02d:%02d → %s", h, mi, frame.hex(" "))
 
     def set_device_datetime(self, year: int, month: int, day: int, hour: int, minute: int):
         """Set both device date and time in a single send slot window if possible.
 
         Frames are queued as Var_07 then Var_08 and should be sent within a send slot.
+        Per updated spec, we avoid any Var_08 read requests for confirmation.
         """
         # Queue date first, then time
         y = max(0, min(255, int(year) - 2000))
@@ -326,9 +330,8 @@ class HeliosCoordinatorWithQueue(HeliosCoordinator):
         f_time = self._build_write_var(HeliosVar.Var_08_time_hour_min, [h, mi])
         self.queue_frame(f_date)
         self.queue_frame(f_time)
-        # read-back after writes
+        # read-back after writes (Var_07 only; Var_08 read not supported)
         self.queue_frame(self._build_read_request(HeliosVar.Var_07_date_month_year))
-        self.queue_frame(self._build_read_request(HeliosVar.Var_08_time_hour_min))
         _LOGGER.info(
             "HeliosPro: queued device datetime set to %04d-%02d-%02d %02d:%02d",
             int(year), m, d, h, mi,
