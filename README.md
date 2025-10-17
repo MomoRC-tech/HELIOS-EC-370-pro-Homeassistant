@@ -1,7 +1,5 @@
 # Helios EC-Pro Home Assistant Integration
 
-**Protocol implementation for pre-2014 Helios (variables and addresses) can be found in [`helios_pro_ventilation/const.py`](helios_pro_ventilation/const.py).**
-
 Custom integration for Home Assistant to control and monitor Helios EC-Pro ventilation units via a TCP bridge to the RS-485 bus.
 
 ---
@@ -216,6 +214,9 @@ Note: This logger is passive and has minimal overhead. When the switch is off, t
 ---
 
 ### Protocol basics (generic)
+
+**Protocol implementation for pre-2014 Helios (variables and addresses) can be found in [`helios_pro_ventilation/const.py`](helios_pro_ventilation/const.py).**
+
 This integration talks the simple Helios EC‑Pro RS‑485 protocol. A quick reference:
 
 - Checksum
