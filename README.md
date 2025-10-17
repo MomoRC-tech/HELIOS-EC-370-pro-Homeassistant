@@ -77,9 +77,35 @@ The integration exposes the following entities:
 - **Climate**: Main control (fan level, auto/manual, presets)
 - **Fan**: Direct fan speed control
 - **Select**: Fan level selector
-- **Sensors**: Temperatures, filter status, device clock, diagnostic info
-- **Switches**: Party mode, calendar enable, debug/RS-485 logger
-- **Binary Sensors**: Filter warning, clock sync status, party mode, external contact
+- **Sensors**:
+  - Temperatures: temp_outdoor, temp_extract, temp_exhaust, temp_supply
+  - Filter status
+  - Device clock
+  - Diagnostic info
+  - fan_level (from broadcast; mirrors Var 0x35)
+  - Party verbleibend (min) (Var 0x10)
+  - Party Zeit (Vorauswahl) (Var 0x11)
+  - Bypass Temperatur 1 (Var 0x1E), Bypass Temperatur 2 (Var 0x60)
+  - Frostschutz Temperatur (Var 0x1F)
+  - Betriebsstunden (Var 0x15)
+  - Minimale Lüfterstufe (Var 0x37)
+  - Filterwechsel (Monate) (Var 0x38)
+  - Party/Zuluft/Abluft Lüfterstufen (Var 0x42/0x45/0x46)
+  - Stufe 1–4 Spannungen Zuluft/Abluft (Var 0x16..0x19)
+  - Nachlaufzeit (Sekunden) (Var 0x49)
+  - Software Version (Var 0x48)
+  - Datum (Gerät), Uhrzeit (Gerät), Wochentag (Gerät)
+- **Switches**:
+  - Party mode
+  - Calendar enable
+  - Debug, one‑shot variable scan (stable id: `switch.helios_ec_pro_variablen_scan_debug`)
+  - Lüftung EIN/AUS (Stufe 1): simple ON/OFF for manual level 1 vs level 0
+  - RS‑485 Logger (diagnostic)
+- **Binary Sensors**:
+  - Filter warning
+  - Clock sync status
+  - Party mode
+  - External contact
 
 ## 7. Services
 - `set_auto_mode` (enabled: boolean)
