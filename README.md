@@ -64,7 +64,7 @@ This integration has been verified to work with the following hardware setups fo
 
 Below is a screenshot of a known-good configuration for the Waveshare RS485-to-Ethernet module, as used with this integration:
 
-![Waveshare RS485-to-Ethernet working configuration](waveshare_config_example.png)
+![Waveshare RS485-to-Ethernet working configuration](https://raw.githubusercontent.com/MomoRC-tech/HELIOS-EC-370-pro-Homeassistant/main/waveshare_config_example.png)
 
 **Key settings:**
 - Device IP: `192.168.0.51`, Device Port: `8234`
