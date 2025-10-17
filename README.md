@@ -40,42 +40,7 @@ This integration provides local push/poll control and monitoring for Helios EC-P
 - RS-485 TCP bridge (e.g., Waveshare/ESP32)
 - Home Assistant (2023.12+ recommended)
 
-### Supported Hardware
-
-#### 1. Waveshare RS485-to-Ethernet Module (Tested & Recommended)
-- **Model:** Waveshare RS485 TO ETH (commonly available module)
-- **Setup:**
-  - Connects directly to the Helios EC‑Pro RS‑485 bus.
-  - Configured in TCP Server mode.
-  - Use 19200 baud, 8 data bits, no parity, 1 stop bit (8N1).
-  - Default IP/Port: `192.168.0.51:8234` (can be customized).
-- **Status:** Fully tested and stable. Recommended for most users seeking a reliable, plug-and-play solution.
-
-**Example: Working Waveshare RS485-to-Ethernet Configuration**
-
-![Waveshare RS485-to-Ethernet working configuration](https://raw.githubusercontent.com/MomoRC-tech/HELIOS-EC-370-pro-Homeassistant/main/waveshare_config_example.png)
-
-**Key settings:**
-- Device IP: `192.168.0.51`, Device Port: `8234`
-- Work Mode: `TCP Server`, Baud Rate: `19200`, Databits: `8`, Stopbits: `1`, Parity: `None`
-- Flow control: `None`, Protocol: `None`, No-Data-Restart: `Disable`
-- Multi-host: `Yes` (default), IP mode: `Static`
-
-This matches the defaults expected by the integration. Adjust the IP/port as needed for your network.
-
-#### 2. DIY: ESP32 with RS485 Transceiver (Advanced, Community-Supported)
-- **Hardware:** ESP32 development board and RS485 transceiver module (e.g., MAX485 or similar).
-- **Setup:**
-  - ESP32 runs custom firmware to act as a transparent TCP server bridging RS485 and Ethernet/WiFi.
-  - Bridges all data between the Helios bus and network.
-  - Must match Helios requirements: 19200 baud, 8N1.
-  - Exposes a TCP socket on a configurable port and IP.
-- **Firmware:** Many open-source examples exist (e.g., Espressif or Arduino-based transparent serial bridge projects).
-- **Status:** Experimental but functional. Allows for wireless or custom integration, suitable for advanced users.
-
-**Notes:**
-- Both solutions must operate as a transparent TCP bridge (no protocol translation, just raw RS485-to-TCP tunneling).
-- The integration expects to connect to a TCP socket that directly exposes the Helios EC‑Pro RS‑485 protocol.
+See [Supported Hardware](#supported-hardware) for detailed setup instructions and examples.
 
 ## 4. Installation
 1. Download the latest release ZIP from GitHub (or clone this repository).
@@ -227,3 +192,40 @@ content: |
 
 ## 16. Roadmap / TODO
 See [TODO.md](TODO.md) for planned fixes and improvements.
+
+## Supported Hardware
+
+### 1. Waveshare RS485-to-Ethernet Module (Tested & Recommended)
+- **Model:** Waveshare RS485 TO ETH (commonly available module)
+- **Setup:**
+  - Connects directly to the Helios EC‑Pro RS‑485 bus.
+  - Configured in TCP Server mode.
+  - Use 19200 baud, 8 data bits, no parity, 1 stop bit (8N1).
+  - Default IP/Port: `192.168.0.51:8234` (can be customized).
+- **Status:** Fully tested and stable. Recommended for most users seeking a reliable, plug-and-play solution.
+
+**Example: Working Waveshare RS485-to-Ethernet Configuration**
+
+![Waveshare RS485-to-Ethernet working configuration](https://raw.githubusercontent.com/MomoRC-tech/HELIOS-EC-370-pro-Homeassistant/main/waveshare_config_example.png)
+
+**Key settings:**
+- Device IP: `192.168.0.51`, Device Port: `8234`
+- Work Mode: `TCP Server`, Baud Rate: `19200`, Databits: `8`, Stopbits: `1`, Parity: `None`
+- Flow control: `None`, Protocol: `None`, No-Data-Restart: `Disable`
+- Multi-host: `Yes` (default), IP mode: `Static`
+
+This matches the defaults expected by the integration. Adjust the IP/port as needed for your network.
+
+### 2. DIY: ESP32 with RS485 Transceiver (Advanced, Community-Supported)
+- **Hardware:** ESP32 development board and RS485 transceiver module (e.g., MAX485 or similar).
+- **Setup:**
+  - ESP32 runs custom firmware to act as a transparent TCP server bridging RS485 and Ethernet/WiFi.
+  - Bridges all data between the Helios bus and network.
+  - Must match Helios requirements: 19200 baud, 8N1.
+  - Exposes a TCP socket on a configurable port and IP.
+- **Firmware:** Many open-source examples exist (e.g., Espressif or Arduino-based transparent serial bridge projects).
+- **Status:** Experimental but functional. Allows for wireless or custom integration, suitable for advanced users.
+
+**Notes:**
+- Both solutions must operate as a transparent TCP bridge (no protocol translation, just raw RS485-to-TCP tunneling).
+- The integration expects to connect to a TCP socket that directly exposes the Helios EC‑Pro RS‑485 protocol.
