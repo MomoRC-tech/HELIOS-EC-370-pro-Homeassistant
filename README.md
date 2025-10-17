@@ -12,14 +12,11 @@ Custom integration for Home Assistant to control and monitor Helios EC-Pro venti
 5. [Configuration](#configuration)
 6. [Entities](#entities)
 7. [Services](#services)
-8. [Usage Examples](#usage-examples)
-9. [Troubleshooting](#troubleshooting)
-10. [Development](#development)
-11. [Filter Maintenance Tips](#filter-maintenance-tips)
-12. [License](#license)
-13. [Changelog](#changelog)
-14. [Lovelace Examples](#lovelace-examples)
-15. [Calendar Editor UI](#calendar-editor-ui)
+8. [Troubleshooting](#troubleshooting)
+9. [License](#license)
+10. [Changelog](#changelog)
+11. [Lovelace Examples](#lovelace-examples)
+12. [Calendar Editor UI](#calendar-editor-ui)
 
 ---
 
@@ -82,92 +79,22 @@ The integration exposes the following entities:
 - `set_device_datetime` (year, month, day, hour, minute)
 - `sync_device_time`: Sync device clock to Home Assistant host
 
-## 8. Usage Examples
-### Example: Filter Warning Notification
-```yaml
-alias: Helios Filterwechsel Hinweis
-description: Benachrichtigung, wenn Filterwechsel erforderlich ist
-trigger:
-  - platform: state
-    entity_id: binary_sensor.helios_filterwechsel_erforderlich
-    to: 'on'
-action:
-  - service: notify.mobile_app_mein_telefon
-    data:
-      title: Helios EC-Pro
-      message: Filterwechsel erforderlich.
-mode: single
-```
-
-### Example: Lovelace Climate Card
-```yaml
-type: picture-entity
-entity: climate.helios_luftung
-name: Helios EC-Pro
-show_state: true
-show_name: true
-```
-
-### Example: Lovelace Tile (Fan)
-```yaml
-type: tile
-entity: fan.helios_lufter
-show_entity_picture: true
-features:
-  - type: fan-speed
-  - type: fan-preset-mode
-```
-
-### Example: Quick Action Buttons
-```yaml
-type: horizontal-stack
-cards:
-  - type: button
-    name: Manual
-    icon: mdi:hand-back-right
-    tap_action:
-      action: call-service
-      service: climate.set_preset_mode
-      target: { entity_id: climate.helios_luftung }
-      data: { preset_mode: manual }
-  - type: button
-    name: Auto
-    icon: mdi:robot
-    tap_action:
-      action: call-service
-      service: climate.set_preset_mode
-      target: { entity_id: climate.helios_luftung }
-      data: { preset_mode: auto }
-```
-
----
-
-## 9. Troubleshooting
+## 8. Troubleshooting
 - If entities don’t update, verify the bridge connection and check logs for missing pings.
 - If write commands don’t take effect, ensure the bus’s ping window is being detected (send slot opens ~80 ms after ping).
 - Clear `__pycache__` and reload the custom component if you’ve updated files but see old behavior.
 - RS-485 HTML logs are written under your Home Assistant `/config` directory (e.g., `helios_rs485_YYYYMMDD-HHMMSS.html`).
 
-## 10. Development
-- Threaded IO for network communication
-- Entity state updates are pushed via the Home Assistant loop
-- Unit tests for frame parsing (run with `pytest`)
-- Fake TCP bridge for local testing: `scripts/fake_helios_bridge.py`
-
-## 11. Filter Maintenance Tips
-- **Filterwechsel (Monate)**: Months until next filter change (Var 0x38)
-- **Filterwechsel erforderlich**: Binary sensor for filter change request
-
-## 12. License
+## 9. License
 MIT — see LICENSE
 
-## 13. Changelog
+## 10. Changelog
 See [CHANGELOG.md](CHANGELOG.md)
 
-## 14. Lovelace Examples
-See [Usage Examples](#usage-examples) above for ready-to-copy Lovelace card configurations.
+## 11. Lovelace Examples
+See [Services](#7-services) above for ready-to-copy Lovelace card configurations.
 
-## 15. Calendar Editor UI
+## 12. Calendar Editor UI
 You can view and edit the weekly schedule directly in Home Assistant:
 - **Sidebar:** Look for “Helios Calendar” in the sidebar (if enabled).
 - **Direct link:** Open `/api/helios_pro_ventilation/calendar.html` in your browser.
