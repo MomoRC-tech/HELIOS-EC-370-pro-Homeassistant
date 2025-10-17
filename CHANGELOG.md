@@ -1,3 +1,8 @@
+## 5.3.2 — 2025-10-17
+
+Minor release (documentation only)
+- Docs: README.md now correctly states 19200 baud for RS-485 and moves the Waveshare config example under the correct section for clarity.
+- No code changes since 5.3.1; this is a documentation-only release.
 ## 5.3.1 — 2025-10-16
 
 Patch release
