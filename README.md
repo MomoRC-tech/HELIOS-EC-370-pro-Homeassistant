@@ -2,7 +2,7 @@
 
 This custom component integrates Helios EC‑Pro ventilation units over a TCP bridge into Home Assistant. It exposes sensors and fan/climate control and writes commands during brief "send slot" windows.
 
-Note: This project is verified to work with a HELIOS EC 370 pro ventilation system (circa 2012). The RS‑485 interface is provided by a Waveshare RS485‑to‑Ethernet module connected directly to the Helios RS‑485 (9600 baud, 8N1).
+Note: This project is verified to work with a HELIOS EC 370 pro ventilation system (circa 2012). The RS‑485 interface is provided by a Waveshare RS485‑to‑Ethernet module connected directly to the Helios RS‑485 (19200 baud, 8N1).
 
 Full documentation: see `helios_pro_ventilation/documentation.md`.
 
@@ -42,7 +42,22 @@ Full documentation: see `helios_pro_ventilation/documentation.md`.
 
 ---
 
+
 ## Supported Hardware
+
+### Example: Working Waveshare RS485-to-Ethernet Configuration
+
+Below is a screenshot of a known-good configuration for the Waveshare RS485-to-Ethernet module, as used with this integration:
+
+![Waveshare RS485-to-Ethernet working configuration](waveshare_config_example.png)
+
+**Key settings:**
+- Device IP: `192.168.0.51`, Device Port: `8234`
+- Work Mode: `TCP Server`, Baud Rate: `19200`, Databits: `8`, Stopbits: `1`, Parity: `None`
+- Flow control: `None`, Protocol: `None`, No-Data-Restart: `Disable`
+- Multi-host: `Yes` (default), IP mode: `Static`
+
+This matches the defaults expected by the integration. Adjust the IP/port as needed for your network.
 
 This integration has been verified to work with the following hardware setups for bridging Home Assistant to the Helios EC‑Pro RS‑485 bus:
 
@@ -52,7 +67,7 @@ This integration has been verified to work with the following hardware setups fo
 - **Setup:**  
   - Connects directly to the Helios EC‑Pro RS‑485 bus.
   - Configured in TCP Server mode.
-  - Use 9600 baud, 8 data bits, no parity, 1 stop bit (8N1).
+  - Use 19200 baud, 8 data bits, no parity, 1 stop bit (8N1).
   - Default IP/Port: `192.168.0.51:8234` (can be customized).
 - **Status:**  
   - **Fully tested and stable.**
@@ -66,7 +81,7 @@ This integration has been verified to work with the following hardware setups fo
 - **Setup:**  
   - ESP32 runs custom firmware to act as a transparent TCP server bridging RS485 and Ethernet/WiFi.
   - Bridges all data between the Helios bus and network.
-  - Must match Helios requirements: 9600 baud, 8N1.
+  - Must match Helios requirements: 19200 baud, 8N1.
   - Exposes a TCP socket on a configurable port and IP.
 - **Firmware:**  
   - Many open-source examples exist (e.g., Espressif or Arduino-based transparent serial bridge projects).
