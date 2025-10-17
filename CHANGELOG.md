@@ -1,3 +1,10 @@
+## 5.3.3 — 2025-10-17
+
+Maintenance release
+- CI: Improved manual release workflow for robustness and clarity.
+- Chore: Removed obsolete release notes files and TODO.md.
+- Docs: README and project files cleaned up for consistency.
+- Assets: Added Waveshare config example screenshot to repository.
 ## 5.3.2 — 2025-10-17
 
 Minor release (documentation only)
