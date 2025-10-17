@@ -53,6 +53,10 @@ Basic configuration is handled via the UI. For advanced options, see the Options
 - `auto_time_sync`: Enable automatic device clock synchronization
 - `time_sync_max_drift_min`: Maximum allowed drift before correction (minutes)
 
+Debug options:
+- Debug: one‑shot scan over Helios variables with a single INFO summary + file exports (enable via switch in the UI)
+- Debug: RS‑485 stream logger switch to capture raw RX/TX frames to an HTML file with color coding and end‑of‑file statistics (auto‑off after 15 minutes; enable via switch in the UI)
+
 YAML import (optional, for initial setup):
 ```yaml
 helios_pro_ventilation:
