@@ -12,11 +12,12 @@ Custom integration for Home Assistant to control and monitor Helios EC-Pro venti
 5. [Configuration](#configuration)
 6. [Entities](#entities)
 7. [Services](#services)
-8. [Troubleshooting](#troubleshooting)
-9. [License](#license)
-10. [Changelog](#changelog)
-11. [Calendar Editor UI](#calendar-editor-ui)
-12. [Debug & Protocol Details](#debug--protocol-details)
+8. [Protocol basics](#protocol-basics)
+9. [Troubleshooting](#troubleshooting)
+10. [License](#license)
+11. [Changelog](#changelog)
+12. [Calendar Editor UI](#calendar-editor-ui)
+13. [Debug & Protocol Details](#debug--protocol-details)
 
 ---
 
@@ -120,19 +121,49 @@ The integration exposes the following entities:
 - `set_device_datetime` (year, month, day, hour, minute)
 - `sync_device_time`: Sync device clock to Home Assistant host
 
-## 8. Troubleshooting
+## 8. Protocol basics (generic)
+
+**Protocol implementation for pre-2014 Helios (variables and addresses) can be found in [`helios_pro_ventilation/const.py`](helios_pro_ventilation/const.py).**
+
+This integration talks the simple Helios EC‑Pro RS‑485 protocol. A quick reference:
+
+- Checksum
+  - For all frames, the last byte is a checksum: chk = (sum(all previous bytes) + 1) & 0xFF.
+- Generic variable frames (read/write)
+  - Layout: [addr, cmd, plen, var, payload..., chk]
+    - addr: our client address (0x11 by default)
+    - cmd: 0x00 = read, 0x01 = write
+    - plen: number of bytes that follow (var + payload)
+    - var: variable index (see HeliosVar in const.py)
+    - payload: optional data bytes (for write or response)
+  - Read request (no payload): [0x11, 0x00, 0x01, var, chk]
+  - Write request (N data bytes): [0x11, 0x01, 1+N, var, data×N, chk]
+  - Responses from the device use the same header shape and checksum.
+  - Multi‑byte values are little‑endian; signed/scale come from the variable metadata. Example: Var_3A temperatures are 10 × 16‑bit signed with scale 0.1 °C.
+- Broadcast frames
+  - Layout: [0xFF, 0xFF, plen, payload..., chk]
+  - Carry current fan level, auto flag, filter warning, as well as device date/time and weekday; emitted periodically by the bus. This integration uses the broadcast frame as the primary source for these sensors.
+- Bus ping
+  - 4‑byte pattern: [b0, 0x00, 0x00, chk]
+  - A short “send slot” (~80 ms) opens after a ping; this integration queues writes to send during that window.
+
+Example (read Var_3A):
+- Request: [0x11, 0x00, 0x01, 0x3A, chk]
+- The checksum is computed from the first 4 bytes: chk = (0x11 + 0x00 + 0x01 + 0x3A + 1) & 0xFF.
+
+## 9. Troubleshooting
 - If entities don’t update, verify the bridge connection and check logs for missing pings.
 - If write commands don’t take effect, ensure the bus’s ping window is being detected (send slot opens ~80 ms after ping).
 - Clear `__pycache__` and reload the custom component if you’ve updated files but see old behavior.
 - RS-485 HTML logs are written under your Home Assistant `/config` directory (e.g., `helios_rs485_YYYYMMDD-HHMMSS.html`).
 
-## 9. License
+## 10. License
 MIT — see LICENSE
 
-## 10. Changelog
+## 11. Changelog
 See [CHANGELOG.md](CHANGELOG.md)
 
-## 11. Calendar Editor UI
+## 12. Calendar Editor UI
 You can view and edit the weekly schedule directly in Home Assistant:
 - **Sidebar:** Look for “Helios Calendar” in the sidebar (if enabled).
 - **Direct link:** Open `http://<YOUR_HOMEASSISTANT.local:8123>/api/helios_pro_ventilation/calendar.html` in your browser.
@@ -212,72 +243,3 @@ Notes:
 Note: This logger is passive and has minimal overhead. When the switch is off, there is no impact on the integration.
 
 ---
-
-### Protocol basics (generic)
-
-**Protocol implementation for pre-2014 Helios (variables and addresses) can be found in [`helios_pro_ventilation/const.py`](helios_pro_ventilation/const.py).**
-
-This integration talks the simple Helios EC‑Pro RS‑485 protocol. A quick reference:
-
-- Checksum
-  - For all frames, the last byte is a checksum: chk = (sum(all previous bytes) + 1) & 0xFF.
-- Generic variable frames (read/write)
-  - Layout: [addr, cmd, plen, var, payload..., chk]
-    - addr: our client address (0x11 by default)
-    - cmd: 0x00 = read, 0x01 = write
-    - plen: number of bytes that follow (var + payload)
-    - var: variable index (see HeliosVar in const.py)
-    - payload: optional data bytes (for write or response)
-  - Read request (no payload): [0x11, 0x00, 0x01, var, chk]
-  - Write request (N data bytes): [0x11, 0x01, 1+N, var, data×N, chk]
-  - Responses from the device use the same header shape and checksum.
-  - Multi‑byte values are little‑endian; signed/scale come from the variable metadata. Example: Var_3A temperatures are 10 × 16‑bit signed with scale 0.1 °C.
-- Broadcast frames
-  - Layout: [0xFF, 0xFF, plen, payload..., chk]
-  - Carry current fan level, auto flag, filter warning, as well as device date/time and weekday; emitted periodically by the bus. This integration uses the broadcast frame as the primary source for these sensors.
-- Bus ping
-  - 4‑byte pattern: [b0, 0x00, 0x00, chk]
-  - A short “send slot” (~80 ms) opens after a ping; this integration queues writes to send during that window.
-
-Example (read Var_3A):
-- Request: [0x11, 0x00, 0x01, 0x3A, chk]
-- The checksum is computed from the first 4 bytes: chk = (0x11 + 0x00 + 0x01 + 0x3A + 1) & 0xFF.
-
----
-
-## Supported Hardware
-
-### 1. Waveshare RS485-to-Ethernet Module (Tested & Recommended)
-- **Model:** Waveshare RS485 TO ETH (commonly available module)
-- **Setup:**
-  - Connects directly to the Helios EC‑Pro RS‑485 bus.
-  - Configured in TCP Server mode.
-  - Use 19200 baud, 8 data bits, no parity, 1 stop bit (8N1).
-  - Default IP/Port: `192.168.0.51:8234` (can be customized).
-- **Status:** Fully tested and stable. Recommended for most users seeking a reliable, plug-and-play solution.
-
-**Example: Working Waveshare RS485-to-Ethernet Configuration**
-
-![Waveshare RS485-to-Ethernet working configuration](https://raw.githubusercontent.com/MomoRC-tech/HELIOS-EC-370-pro-Homeassistant/main/waveshare_config_example.png)
-
-**Key settings:**
-- Device IP: `192.168.0.51`, Device Port: `8234`
-- Work Mode: `TCP Server`, Baud Rate: `19200`, Databits: `8`, Stopbits: `1`, Parity: `None`
-- Flow control: `None`, Protocol: `None`, No-Data-Restart: `Disable`
-- Multi-host: `Yes` (default), IP mode: `Static`
-
-This matches the defaults expected by the integration. Adjust the IP/port as needed for your network.
-
-### 2. DIY: ESP32 with RS485 Transceiver (Advanced, Community-Supported)
-- **Hardware:** ESP32 development board and RS485 transceiver module (e.g., MAX485 or similar).
-- **Setup:**
-  - ESP32 runs custom firmware to act as a transparent TCP server bridging RS485 and Ethernet/WiFi.
-  - Bridges all data between the Helios bus and network.
-  - Must match Helios requirements: 19200 baud, 8N1.
-  - Exposes a TCP socket on a configurable port and IP.
-- **Firmware:** Many open-source examples exist (e.g., Espressif or Arduino-based transparent serial bridge projects).
-- **Status:** Experimental but functional. Allows for wireless or custom integration, suitable for advanced users.
-
-**Notes:**
-- Both solutions must operate as a transparent TCP bridge (no protocol translation, just raw RS485-to-TCP tunneling).
-- The integration expects to connect to a TCP socket that directly exposes the Helios EC‑Pro RS‑485 protocol.
