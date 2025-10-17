@@ -93,14 +93,14 @@ See [CHANGELOG.md](CHANGELOG.md)
 ## 11. Calendar Editor UI
 You can view and edit the weekly schedule directly in Home Assistant:
 - **Sidebar:** Look for “Helios Calendar” in the sidebar (if enabled).
-- **Direct link:** Open `/api/helios_pro_ventilation/calendar.html` in your browser.
+- **Direct link:** Open `http://<YOUR_HOMEASSISTANT.local:8123>/api/helios_pro_ventilation/calendar.html` in your browser.
 
 **Tip:** Add a dashboard Markdown card for one-click access:
 ```yaml
 type: markdown
 title: Helios Kalender
 content: |
-  [🗓️ Kalender öffnen](/api/helios_pro_ventilation/calendar.html)
+  [🗓️ Kalender öffnen](http://<YOUR_HOMEASSISTANT.local:8123>/api/helios_pro_ventilation/calendar.html)
 ```
 
 **Editor features:**
