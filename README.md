@@ -15,8 +15,7 @@ Custom integration for Home Assistant to control and monitor Helios EC-Pro venti
 8. [Troubleshooting](#troubleshooting)
 9. [License](#license)
 10. [Changelog](#changelog)
-11. [Lovelace Examples](#lovelace-examples)
-12. [Calendar Editor UI](#calendar-editor-ui)
+11. [Calendar Editor UI](#calendar-editor-ui)
 
 ---
 
@@ -91,10 +90,7 @@ MIT — see LICENSE
 ## 10. Changelog
 See [CHANGELOG.md](CHANGELOG.md)
 
-## 11. Lovelace Examples
-See [Services](#7-services) above for ready-to-copy Lovelace card configurations.
-
-## 12. Calendar Editor UI
+## 11. Calendar Editor UI
 You can view and edit the weekly schedule directly in Home Assistant:
 - **Sidebar:** Look for “Helios Calendar” in the sidebar (if enabled).
 - **Direct link:** Open `/api/helios_pro_ventilation/calendar.html` in your browser.
