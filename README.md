@@ -95,6 +95,8 @@ The integration exposes the following entities:
   - Nachlaufzeit (Sekunden) (Var 0x49)
   - Software Version (Var 0x48)
   - Datum (Gerät), Uhrzeit (Gerät), Wochentag (Gerät)
+  - **Diagnostic sensors (disabled by default):**
+    - Kalender Montag … Sonntag — expose raw 48-slot arrays as JSON-like text for visibility
 - **Switches**:
   - Party mode
   - Calendar enable
