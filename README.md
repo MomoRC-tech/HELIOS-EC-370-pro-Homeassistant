@@ -20,7 +20,6 @@ Custom integration for Home Assistant to control and monitor Helios EC-Pro venti
 13. [Changelog](#changelog)
 14. [Lovelace Examples](#lovelace-examples)
 15. [Calendar Editor UI](#calendar-editor-ui)
-16. [Roadmap / TODO](#roadmap--todo)
 
 ---
 
@@ -189,9 +188,6 @@ content: |
 - Unsaved indicator: days with local changes show a red bullet; click Save on the row or “Save selected”
 - Refresh reloads current values; missing days will be queued for reading
 - Toolbar shows a compact clock/status caption (state, date/time, drift, sync) when available
-
-## 16. Roadmap / TODO
-See [TODO.md](TODO.md) for planned fixes and improvements.
 
 ## Supported Hardware
 
