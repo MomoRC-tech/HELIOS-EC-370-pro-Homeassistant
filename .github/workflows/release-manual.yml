@@ -1,51 +1,141 @@
-name: Prepare release (manual)
+name: Release (manual)
 
-on:
+
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (e.g., 5.2.1)'
+        description: 'Version (SemVer, e.g. 5.3.0 or 5.3.0-rc.1)'
         required: true
       body_file:
-        description: 'Optional path to release notes file (relative to repo root)'
+        description: 'Optional path to release notes file (relative to repo root). Leave empty to auto-extract from CHANGELOG.md'
         required: false
         default: ''
 
 permissions:
-  contents: write
+  contents: write  # push commit, create tag & release
+
+concurrency:
+  group: manual-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  prepare:
+  release:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # needed for tags/notes
 
-      - name: Update manifest.json version
+      - name: Ensure we are on default branch (safety)
+        run: |
+          set -euo pipefail
+          DEF="${{ github.event.repository.default_branch }}"
+          CUR="${GITHUB_REF_NAME}"
+          echo "Default branch: $DEF | Current: $CUR"
+          if [ "$DEF" != "$CUR" ]; then
+            echo "Refusing to release from a non-default branch ($CUR). Switch to $DEF or remove this guard." >&2
+            exit 1
+          fi
+
+      - name: Validate version format
+        id: semver
         run: |
           set -euo pipefail
           v="${{ github.event.inputs.version }}"
-          echo "Setting manifest version to $v"
-          jq --arg v "$v" '.version=$v' helios_pro_ventilation/manifest.json > manifest.tmp && mv manifest.tmp helios_pro_ventilation/manifest.json
+          if ! [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9\.-]+)?$ ]]; then
+            echo "Invalid version: $v (must be SemVer like 1.2.3 or 1.2.3-rc.1)" >&2
+            exit 1
+          fi
+          echo "VERSION=$v" >> "$GITHUB_ENV"
+
+      - name: Bump manifest.json
+        run: |
+          set -euo pipefail
+          echo "Setting manifest version to $VERSION"
+          jq --arg v "$VERSION" '.version=$v' helios_pro_ventilation/manifest.json > manifest.tmp
+          mv manifest.tmp helios_pro_ventilation/manifest.json
+
+      - name: Commit version bump (if changed)
+        run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add helios_pro_ventilation/manifest.json
-          git commit -m "chore: bump version to $v [skip ci]" || echo "No changes to commit"
+          if ! git diff --quiet -- helios_pro_ventilation/manifest.json; then
+            git add helios_pro_ventilation/manifest.json
+            git commit -m "chore: bump version to $VERSION [skip ci]"
+            git push
+          else
+            echo "No changes to commit."
+          fi
 
-      - name: Push changes and tag
+      - name: Create annotated tag
         run: |
           set -euo pipefail
-          v="${{ github.event.inputs.version }}"
-          git push || true
-          git tag -a "v${v}" -m "Release v${v}" || echo "Tag already exists"
-          git push origin "v${v}" || echo "Tag push skipped"
+          TAG="v$VERSION"
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "Tag $TAG already exists; skipping create."
+          else
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "$TAG"
+          fi
 
-      - name: Optionally create GitHub Release directly
-        if: ${{ github.event.inputs.body_file != '' }}
+      - name: Build release ZIP (flat root)
+        run: |
+          set -euo pipefail
+          ZIP="helios_pro_ventilation-$VERSION.zip"
+          (cd helios_pro_ventilation && zip -r "../$ZIP" . -x "**/__pycache__/**" ".pytest_cache/**")
+          echo "ZIP_NAME=$ZIP" >> "$GITHUB_ENV"
+          ls -l "$ZIP"
+
+      - name: Prepare release notes (auto from CHANGELOG if body_file is empty)
+        id: notes
+        env:
+          BODY_FILE_INPUT: ${{ github.event.inputs.body_file }}
+        run: |
+          set -euo pipefail
+          if [ -n "$BODY_FILE_INPUT" ]; then
+            # Use provided file as-is
+            echo "BODY_FILE=$BODY_FILE_INPUT" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          # Auto-extract from CHANGELOG.md
+          if [ ! -f CHANGELOG.md ]; then
+            echo "No CHANGELOG.md found; generating a basic body."
+            printf "# v%s\n\nNo changelog found.\n" "$VERSION" > RELEASE_NOTES.md
+            echo "BODY_FILE=RELEASE_NOTES.md" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          awk -v tag="$VERSION" '
+            BEGIN { f=0 }
+            $0 ~ "^##[[:space:]]*" tag "([[:space:]]|$)" { f=1; print; next }
+            /^##[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+/ { if (f==1) exit }
+            { if (f==1) print }
+          ' CHANGELOG.md > RELEASE_NOTES.md || true
+
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "Could not find exact section for $VERSION; using fallback."
+            name: Release (manual)
+            on:
+            } > RELEASE_NOTES.md
+          fi
+
+          echo "--- RELEASE NOTES ---"
+          cat RELEASE_NOTES.md || true
+          echo "---------------------"
+
+          echo "BODY_FILE=RELEASE_NOTES.md" >> "$GITHUB_ENV"
+
+      # If user supplied body_file, use it; otherwise use the generated notes
+      - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
-          tag: v${{ github.event.inputs.version }}
-          name: v${{ github.event.inputs.version }}
-          bodyFile: ${{ github.event.inputs.body_file }}
+          tag: v${{ env.VERSION }}
+          name: v${{ env.VERSION }}
+          bodyFile: ${{ env.BODY_FILE }}
           draft: false
           prerelease: false
+          artifacts: ${{ env.ZIP_NAME }}
