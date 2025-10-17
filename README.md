@@ -29,6 +29,8 @@ This integration provides local push/poll control and monitoring for Helios EC-P
 - Device clock synchronization
 - Diagnostic sensors for filter and clock status
 - Lovelace dashboard support
+- Debug: one‑shot scan over Helios variables with a single INFO summary + file exports
+- Debug: RS‑485 stream logger switch to capture raw RX/TX frames to an HTML file with statistics (auto‑off after 15 minutes)
 
 ## 3. Hardware Requirements
 - Helios EC-Pro ventilation unit
