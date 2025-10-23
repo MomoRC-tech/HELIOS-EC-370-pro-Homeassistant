@@ -208,6 +208,16 @@ RJ-12 (6-pin) to the HELIOS-BCU
 Pin 1 = +24.5 V, Pin 2 = RS485-A, Pin 3 = RS485-B, Pin 6 = GND (Pins 4/5 unused).
 Label this mapping in your install and verify polarity before plugging any adapter.
 
+Pin	Signal	Notes
+1	+24.5 V	BUS supply (approx. 24–25 V)
+2	RS485-A	A / D+
+3	RS485-B	B / D–
+4	(unknown)	—
+5	(unknown)	—
+6	GND	BUS-GND / 0 V
+
+Quick sanity check: You should measure ~24–25 V DC between Pin 1 (+) and Pin 6 (GND) before wiring your adapter.
+
 **Termination & topology (updated):
 RS-485 best practice is daisy-chain (“party line”) with 120 Ω at the two physical ends. However, in practice on these Helios systems, no additional termination has been required in many installs (your experience too).
 Recommendation: Start with the factory/default state (no extra terminators added). Only add or enable termination if you see bus instability on long runs or in noisy environments. Use a twisted pair for A/B and share BUS-GND as reference with your adapter.
