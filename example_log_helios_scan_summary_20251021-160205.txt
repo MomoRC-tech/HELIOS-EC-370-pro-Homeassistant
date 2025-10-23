@@ -1,0 +1,79 @@
+HeliosDebug summary: single-shot scan completed (76 requested, 60 responses)
+Var  Name                                      Response                                      Note
+---  -----------------------------------------  ---------------------------------------------  ----------------------------------------------
+0x00  Var_00_calendar_mon                        — no response —                                24 × 8-bit
+0x01  Var_01_calendar_tue                        — no response —                                24 × 8-bit
+0x02  Var_02_calendar_wed                        — no response —                                24 × 8-bit
+0x03  Var_03_calendar_thu                        — no response —                                24 × 8-bit
+0x04  Var_04_calendar_fri                        — no response —                                24 × 8-bit
+0x05  Var_05_calendar_sat                        — no response —                                24 × 8-bit
+0x06  Var_06_calendar_sun                        — no response —                                24 × 8-bit (low/high half-hour)
+0x07  Var_07_date_month_year                     [11, 7]                                        3 × 8-bit ([0]=day, [1]=month, [2]=year since 2000)
+0x08  Var_08_time_hour_min                       — no response —                                2 × 8-bit ([0]=hour, [1]=minutes)
+0x0D  Var_0D_back_up_heating                     [0]                                            8-bit (0=disabled, 1=enabled)
+0x0E  Var_0E_preheat_temp                        [3.0] °C                                       16-bit (request at offset 0x50)
+0x0F  Var_0F_party_enabled                       — no response —                                8-bit (write-only: 0=disabled, 1=enabled); actual state reflected by Var_10 (>0 means active)
+0x10  Var_10_party_curr_time                     [0] min                                        16-bit (minutes, current selected)
+0x11  Var_11_party_time                          [120] min                                      16-bit (minutes, pre-selected)
+0x14  Var_14_ext_contact                         [1]                                            8-bit
+0x15  Var_15_hours_on                            [58834] hours                                  32-bit (hours)
+0x16  Var_16_fan_1_voltage                       [2.0, 2.0] V                                   2 × 16-bit (Zuluft/Abluft, 0.1 V)
+0x17  Var_17_fan_2_voltage                       [2.8, 2.8] V                                   2 × 16-bit (Zuluft/Abluft, 0.1 V)
+0x18  Var_18_fan_3_voltage                       [5.0, 5.0] V                                   2 × 16-bit (Zuluft/Abluft, 0.1 V)
+0x19  Var_19_fan_4_voltage                       [10.0, 10.0] V                                 2 × 16-bit (Zuluft/Abluft, 0.1 V)
+0x1A  Var_1A_vacation_start                      — no response —                                24-bit (day, month, year)
+0x1B  Var_1B_vacation_end                        — no response —                                24-bit (day, month, year)
+0x1C  Var_1C_unknown                             [800]                                          16-bit e.g. 0x20 0x03 (800)
+0x1D  Var_1D_unknown                             [60]                                           8-bit e.g. 0x3C
+0x1E  Var_1E_bypass1_temp                        [23.0] °C                                      16-bit (0.1 °C, Außenluftbegrenzung)
+0x1F  Var_1F_frostschutz                         [3.0] °C                                       16-bit (0.1 °C)
+0x20  Var_20_unknown                             [1]                                            8-bit e.g. 0x01
+0x21  Var_21_weekoffs_co2                        [10] ppm                                       8-bit (ppm)
+0x22  Var_22_weekoffs_humdty                     [10] %                                         8-bit (%)
+0x23  Var_23_weekoffs_temp                       [3] °C                                         8-bit (°C)
+0x35  Var_35_fan_level                           [1] None                                       8-bit (0..4) — READ ONLY
+0x37  Var_37_min_fan_level                       [0]                                            8-bit (0..4)
+0x38  Var_38_change_filter                       [6] months                                     8-bit (months)
+0x3A  Var_3A_sensors_temp                        [14.8, 22.4, 16.7, 21.1] °C                    10 × 16-bit (temperatures)
+0x3B  Var_3B_sensors_co2                         [9999, 9999, 9999, 9999] ppm                   4 × 16-bit (CO₂ sensors)
+0x3C  Var_3C_sensors_humidity                    [999, 999, 999, 999] %                         4 × 16-bit (humidity sensors)
+0x3F  Var_3F_unknown                             [0]                                            8-bit 0x00
+0x40  Var_40_unknown                             [10]                                           8-bit 0x0A
+0x41  Var_41_unknown                             [10]                                           8-bit 0x0A
+0x42  Var_42_party_level                         [4]                                            8-bit (fan level)
+0x43  Var_43_unknown                             [0]                                            8-bit 0x00
+0x44  Var_44_unknown                             [0]                                            8-bit 0x00
+0x45  Var_45_zuluft_level                        [2]                                            8-bit 0x02
+0x46  Var_46_abluft_level                        [3]                                            8-bit 0x03
+0x47  Var_47_unknown                             [0]                                            8-bit 0x00
+0x48  Var_48_software_version                    [131]                                          16-bit e.g. 0x83 0x00 (1.31)
+0x49  Var_49_nachlaufzeit                        [60] s                                         8-bit (seconds)
+0x4A  Var_4A_unknown                             — no response —                                8-bit 0x3C
+0x4B  Var_4B_unknown                             — no response —                                8-bit 0x3C
+0x4C  Var_4C_unknown                             [2]                                            8-bit 0x02
+0x4D  Var_4D_unknown                             [2]                                            8-bit 0x02
+0x4E  Var_4E_vacation_enabled                    [0]                                            8-bit (0=off, 1=on)
+0x4F  Var_4F_preheat_enabled                     [0]                                            8-bit (0=off, 1=on)
+0x50  Var_50_preheat_temp                        — no response —                                16-bit (0.1 °C)
+0x51  Var_51_unknown                             [1]                                            8-bit 0x02
+0x52  Var_52_weekoffs_enabled                    [0]                                            8-bit (0=off, 1=on)
+0x54  Var_54_quiet_curr_time                     [0] min                                        16-bit (minutes, current)
+0x55  Var_55_quiet_enabled                       — no response —                                8-bit (write-only: 0=disabled, 1=enabled)
+0x56  Var_56_quiet_time                          [60] min                                       8-bit (minutes)
+0x57  Var_57_quiet_level                         [0]                                            8-bit (fan level)
+0x58  Var_58_unknown                             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]  26 × 8-bit 0x00 0x00 …
+0x59  Var_59_unknown                             [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]  26 × 8-bit 0x01 0x00 …
+0x5A  Var_5A_unknown                             [0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]  26 × 8-bit 0x02 0x00 …
+0x5B  Var_5B_unknown                             [0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]  26 × 8-bit 0x03 0x00 …
+0x5C  Var_5C_unknown                             [0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]  26 × 8-bit 0x04 0x00 …
+0x5D  Var_5D_unknown                             [0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]  26 × 8-bit 0x05 0x00 …
+0x5E  Var_5E_unknown                             [0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]  26 × 8-bit 0x06 0x00 …
+0x5F  Var_5F_unknown                             [0]                                            8-bit 0x00
+0x60  Var_60_bypass2_temp                        [15] °C                                        8-bit (°C, Bypass temperature)
+0x61  Var_61_unknown                             [286]                                          24-bit 0x1E 0x01 0x00
+0x62  Var_62_unknown                             [5]                                            24-bit 0x05 0x00 0x00
+0x63  Var_63_unknown                             [271]                                          24-bit 0x0F 0x01 0x00
+0x64  Var_64_unknown                             [394245]                                       24-bit 0x05 0x04 0x06
+0x65  Var_65_unknown                             [165]                                          16-bit 0xA5 0x00 (165)
+0x66  Var_66_unknown                             [400]                                          16-bit 0x90 0x01 (400)
+0x67  Var_67_unknown                             [252641280]                                    32-bit 0x00 0x00 0F 0F
