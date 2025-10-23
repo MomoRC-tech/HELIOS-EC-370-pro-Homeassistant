@@ -19,7 +19,7 @@ Custom integration for Home Assistant to control and monitor Helios EC-Pro venti
 12. [Annex](#12-Annex)
 
 A1. [Calendar Editor UI](#calendar-editor-ui)
-A2. [Supported Hardware](#supported-hardware)
+A2. [Supported Hardware and wiring](#supported-hardware-and-wiring)
 A3. [Debug & Protocol Details](#debug--protocol-details)
 
 ---
@@ -193,22 +193,22 @@ content: |
 
 
 
-## Supported Hardware
+## Supported Hardware and wiring
 
 ## ⚠️ Very important: safety & wiring variants
 
-Work only if you’re trained and understand the risks.
-The Helios bus carries ~+24.5 V. Shorting +24.5 V to any RS-485 pin can damage the controller and/or your interface. Disconnect power before wiring and verify with a DMM.
+**Work only if you’re trained and understand the risks.
+**The Helios bus carries ~+24.5 V. Shorting +24.5 V to any RS-485 pin can damage the controller and/or your interface. Disconnect power before wiring and verify with a DMM.
 
-Docs discrepancy (4-pin vs 6-pin): always meter first.
+**Docs discrepancy (4-pin vs 6-pin): always meter first.
 Some models show RS-485 on RJ-10 (4P4C), while others (like your pre-2014 EC 370 Pro) effectively expose it on RJ-12 (6P6C). Always confirm pin polarity/roles with a meter before connecting.
 
-Your field-verified variant (EC 370 Pro, no interface box):
+**My field-verified variant (EC 370 Pro, no interface box):
 RJ-12 (6-pin) to the HELIOS-BCU
 Pin 1 = +24.5 V, Pin 2 = RS485-A, Pin 3 = RS485-B, Pin 6 = GND (Pins 4/5 unused).
 Label this mapping in your install and verify polarity before plugging any adapter.
 
-Termination & topology (updated):
+**Termination & topology (updated):
 RS-485 best practice is daisy-chain (“party line”) with 120 Ω at the two physical ends. However, in practice on these Helios systems, no additional termination has been required in many installs (your experience too).
 Recommendation: Start with the factory/default state (no extra terminators added). Only add or enable termination if you see bus instability on long runs or in noisy environments. Use a twisted pair for A/B and share BUS-GND as reference with your adapter.
 
