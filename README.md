@@ -42,7 +42,7 @@ This integration provides local push/poll control and monitoring for Helios EC-P
 - RS-485 TCP bridge (e.g., Waveshare/ESP32)
 - Home Assistant (2023.12+ recommended)
 
-See [Supported Hardware](#supported-hardware) for more details and examples.
+See [Supported Hardware](#supported-hardware-and-wiring) for more details and examples.
 
 ## 4. Installation
 1. Download the latest release ZIP from GitHub (or clone this repository).
@@ -201,12 +201,26 @@ content: |
 **The Helios bus carries ~+24.5 V. Shorting +24.5 V to any RS-485 pin can damage the controller and/or your interface. Disconnect power before wiring and verify with a DMM.
 
 **Docs discrepancy (4-pin vs 6-pin): always meter first.
-Some models show RS-485 on RJ-10 (4P4C), while others (like your pre-2014 EC 370 Pro) effectively expose it on RJ-12 (6P6C). Always confirm pin polarity/roles with a meter before connecting.
+Some models show RS-485 on RJ-10 (4P4C), while others (like my pre-2014 EC 370 Pro) effectively expose it on RJ-12 (6P6C). Always confirm pin polarity/roles with a meter before connecting.
 
-**My field-verified variant (EC 370 Pro, no interface box):
-RJ-12 (6-pin) to the HELIOS-BCU
-Pin 1 = +24.5 V, Pin 2 = RS485-A, Pin 3 = RS485-B, Pin 6 = GND (Pins 4/5 unused).
-Label this mapping in your install and verify polarity before plugging any adapter.
+**My RJ-12 (6-pin) BUS pinout to the HELIOS-BCU (EC 370 Pro, no interface box):
+*Orientation
+**Plug view: 
+hold the plug with the clip down and gold contacts facing you → pins 1 → 6 left to right.
+Plug (6P6C) — clip down, contacts facing you
+┌───────────────────────────────┐
+│ 1   2   3   4   5   6         │
+│ |   |   |   |   |   |         │
+└───────────────────────────────┘
+
+**Jack view: 
+look into the socket with the clip slot up → pins 6 → 1 left to right.
+Jack (6P6C) — looking into socket, clip slot up
+┌───────────────────────────────┐
+│         | | | | | |           │
+│         6 5 4 3 2 1           │
+└───────────────────────────────┘
+
 
 Pin	Signal	Notes
 1	+24.5 V	BUS supply (approx. 24–25 V)
