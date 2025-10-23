@@ -197,7 +197,8 @@ content: |
 
 ## ⚠️ Very important: safety & wiring variants
 
-**Work only if you’re trained and understand the risks.**
+**Work only on electrical installations if you’re trained and understand the risks.**
+
 **The Helios bus carries ~+24.5 V. Shorting +24.5 V to any RS-485 pin can damage the controller and/or your interface. Disconnect power before wiring and verify with a DMM.**
 
 **Docs discrepancy (4-pin vs 6-pin): always meter first.**
