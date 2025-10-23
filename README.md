@@ -5,19 +5,20 @@ Custom integration for Home Assistant to control and monitor Helios EC-Pro venti
 ---
 
 ## Table of Contents
-1. [Overview](#overview)
-2. [Features](#features)
-3. [Hardware Requirements](#hardware-requirements)
-4. [Installation](#installation)
-5. [Configuration](#configuration)
-6. [Entities](#entities)
-7. [Services](#services)
-8. [Protocol basics](#protocol-basics)
-9. [Troubleshooting](#troubleshooting)
-10. [License](#license)
-11. [Changelog](#changelog)
-12. [Calendar Editor UI](#calendar-editor-ui)
-13. [Debug & Protocol Details](#debug--protocol-details)
+1. [Overview](#1-overview)
+2. [Features](#2-features)
+3. [Hardware Requirements](#3-hardware-requirements)
+4. [Installation](#4-installation)
+5. [Configuration](#5-configuration)
+6. [Entities](#6-entities)
+7. [Services](#7-services)
+8. [Protocol basics](#8-protocol-basics)
+9. [Troubleshooting](#9-troubleshooting)
+10. [License](#10-license)
+11. [Changelog](#11-changelog)
+A1. [Calendar Editor UI](#calendar-editor-ui)
+A2. [Supported Hardware](#supported-hardware)
+A3. [Debug & Protocol Details](#debug--protocol-details)
 
 ---
 
@@ -163,7 +164,9 @@ MIT — see LICENSE
 ## 11. Changelog
 See [CHANGELOG.md](CHANGELOG.md)
 
-## 12. Calendar Editor UI
+## Annex:
+
+### Calendar Editor UI
 You can view and edit the weekly schedule directly in Home Assistant:
 - **Sidebar:** Look for “Helios Calendar” in the sidebar (if enabled).
 - **Direct link:** Open `http://<YOUR_HOMEASSISTANT.local:8123>/api/helios_pro_ventilation/calendar.html` in your browser.
@@ -184,6 +187,46 @@ content: |
 - Unsaved indicator: days with local changes show a red bullet; click Save on the row or “Save selected”
 - Refresh reloads current values; missing days will be queued for reading
 - Toolbar shows a compact clock/status caption (state, date/time, drift, sync) when available
+
+
+
+## Supported Hardware
+
+### 1. Waveshare RS485-to-Ethernet Module (Tested & Recommended)
+- **Model:** Waveshare RS485 TO ETH (commonly available module)
+- **Setup:**
+  - Connects directly to the Helios EC‑Pro RS‑485 bus.
+  - Configured in TCP Server mode.
+  - Use 19200 baud, 8 data bits, no parity, 1 stop bit (8N1).
+  - Default IP/Port: `192.168.0.51:8234` (can be customized).
+- **Status:** Fully tested and stable. Recommended for most users seeking a reliable, plug-and-play solution.
+
+**Example: Working Waveshare RS485-to-Ethernet Configuration**
+
+![Waveshare RS485-to-Ethernet working configuration](https://raw.githubusercontent.com/MomoRC-tech/HELIOS-EC-370-pro-Homeassistant/main/waveshare_config_example.png)
+
+**Key settings:**
+- Device IP: `192.168.0.51`, Device Port: `8234`
+- Work Mode: `TCP Server`, Baud Rate: `19200`, Databits: `8`, Stopbits: `1`, Parity: `None`
+- Flow control: `None`, Protocol: `None`, No-Data-Restart: `Disable`
+- Multi-host: `Yes` (default), IP mode: `Static`
+
+This matches the defaults expected by the integration. Adjust the IP/port as needed for your network.
+
+### 2. DIY: ESP32 with RS485 Transceiver (Advanced, Community-Supported)
+- **Hardware:** ESP32 development board and RS485 transceiver module (e.g., MAX485 or similar).
+- **Setup:**
+  - ESP32 runs custom firmware to act as a transparent TCP server bridging RS485 and Ethernet/WiFi.
+  - Bridges all data between the Helios bus and network.
+  - Must match Helios requirements: 19200 baud, 8N1.
+  - Exposes a TCP socket on a configurable port and IP.
+- **Firmware:** Many open-source examples exist (e.g., Espressif or Arduino-based transparent serial bridge projects).
+- **Status:** Experimental but functional. Allows for wireless or custom integration, suitable for advanced users.
+
+**Notes:**
+- Both solutions must operate as a transparent TCP bridge (no protocol translation, just raw RS485-to-TCP tunneling).
+- The integration expects to connect to a TCP socket that directly exposes the Helios EC‑Pro RS‑485 protocol.
+
 
 ## Debug & Protocol Details
 
