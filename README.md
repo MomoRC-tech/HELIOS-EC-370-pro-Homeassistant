@@ -197,29 +197,32 @@ content: |
 
 ## ⚠️ Very important: safety & wiring variants
 
-**Work only if you’re trained and understand the risks.
-**The Helios bus carries ~+24.5 V. Shorting +24.5 V to any RS-485 pin can damage the controller and/or your interface. Disconnect power before wiring and verify with a DMM.
+**Work only if you’re trained and understand the risks.**
+**The Helios bus carries ~+24.5 V. Shorting +24.5 V to any RS-485 pin can damage the controller and/or your interface. Disconnect power before wiring and verify with a DMM.**
 
-**Docs discrepancy (4-pin vs 6-pin): always meter first.
+**Docs discrepancy (4-pin vs 6-pin): always meter first.**
 Some models show RS-485 on RJ-10 (4P4C), while others (like my pre-2014 EC 370 Pro) effectively expose it on RJ-12 (6P6C). Always confirm pin polarity/roles with a meter before connecting.
 
-**My RJ-12 (6-pin) BUS pinout to the HELIOS-BCU (EC 370 Pro, no interface box):
-*Orientation
-**Plug view: 
-hold the plug with the clip down and gold contacts facing you → pins 1 → 6 left to right.
-Plug (6P6C) — clip down, contacts facing you
-┌───────────────────────────────┐
-│ 1   2   3   4   5   6         │
-│ |   |   |   |   |   |         │
-└───────────────────────────────┘
+**My RJ-12 (6-pin) BUS pinout to the HELIOS-BCU (EC 370 Pro, no interface box):**
 
-**Jack view: 
+*Orientation*
+**Plug view: **
+hold the plug with the clip down and gold contacts facing you → pins 1 → 6 left to right.
+
+Plug (6P6C) — clip down, contacts facing you
++-------------------------------------------+
+| 1   2   3   4   5   6                     |
+| |   |   |   |   |   |                     |
++-------------------------------------------+
+
+**Jack view:** 
 look into the socket with the clip slot up → pins 6 → 1 left to right.
+
 Jack (6P6C) — looking into socket, clip slot up
-┌───────────────────────────────┐
-│         | | | | | |           │
-│         6 5 4 3 2 1           │
-└───────────────────────────────┘
++-------------------------------------------+
+|                     | | | | | |           |
+|                     6 5 4 3 2 1           |
++-------------------------------------------+
 
 
 Pin	Signal	Notes
@@ -232,7 +235,7 @@ Pin	Signal	Notes
 
 Quick sanity check: You should measure ~24–25 V DC between Pin 1 (+) and Pin 6 (GND) before wiring your adapter.
 
-**Termination & topology (updated):
+**Termination & topology (updated):**
 RS-485 best practice is daisy-chain (“party line”) with 120 Ω at the two physical ends. However, in practice on these Helios systems, no additional termination has been required in many installs (your experience too).
 Recommendation: Start with the factory/default state (no extra terminators added). Only add or enable termination if you see bus instability on long runs or in noisy environments. Use a twisted pair for A/B and share BUS-GND as reference with your adapter.
 
