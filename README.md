@@ -16,6 +16,7 @@ Custom integration for Home Assistant to control and monitor Helios EC-Pro venti
 9. [Troubleshooting](#9-troubleshooting)
 10. [License](#10-license)
 11. [Changelog](#11-changelog)
+12. [Annex] (#12-Annex)
 A1. [Calendar Editor UI](#calendar-editor-ui)
 A2. [Supported Hardware](#supported-hardware)
 A3. [Debug & Protocol Details](#debug--protocol-details)
@@ -164,7 +165,8 @@ MIT — see LICENSE
 ## 11. Changelog
 See [CHANGELOG.md](CHANGELOG.md)
 
-## Annex:
+
+## 12. Annex
 
 ### Calendar Editor UI
 You can view and edit the weekly schedule directly in Home Assistant:
