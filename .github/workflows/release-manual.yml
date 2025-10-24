@@ -1,6 +1,5 @@
 name: Release (manual)
-
-
+on:
   workflow_dispatch:
     inputs:
       version:
