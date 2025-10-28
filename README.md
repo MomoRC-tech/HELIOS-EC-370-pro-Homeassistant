@@ -1,6 +1,6 @@
-# Helios EC-Pro Home Assistant Integration
+# Helios EC-Pro 270/370 Home Assistant Integration
 
-Custom integration for Home Assistant to control and monitor Helios EC-Pro ventilation units via a TCP bridge to the RS-485 bus.
+Custom integration for Home Assistant to control and monitor Helios EC-Pro 270/370 (pre 2014)ventilation units via a TCP bridge to the RS-485 bus.
 
 ---
 
@@ -38,7 +38,7 @@ This integration provides local push/poll control and monitoring for Helios EC-P
 - Debug: RS‑485 stream logger switch to capture raw RX/TX frames to an HTML file with statistics (auto‑off after 15 minutes)
 
 ## 3. Hardware Requirements
-- Helios EC-Pro ventilation unit
+- Helios EC-Pro 270/370 (pre 2014) ventilation unit
 - RS-485 TCP bridge (e.g., Waveshare/ESP32)
 - Home Assistant (2023.12+ recommended)
 
