@@ -43,8 +43,58 @@ async def async_setup_entry(hass, entry, async_add_entities):
         HeliosDebugScanSwitch(coord, entry.entry_id),
         HeliosFanLevel1ToggleSwitch(coord, entry),
         HeliosRs485LoggerSwitch(coord, entry),
+        HeliosIcingProtectionSwitch(coord, entry),
     ]
     async_add_entities(entities)
+
+class HeliosIcingProtectionSwitch(SwitchEntity):
+    """Switch to enable/disable icing protection feature."""
+    _attr_has_entity_name = True
+
+    def __init__(self, coordinator: Any, entry: Any) -> None:
+        self._coord = coordinator
+        self._entry = entry
+        self._is_on = False
+        try:
+            self._attr_device_info = DeviceInfo(
+                identifiers={(DOMAIN, entry.entry_id)},
+                name="Helios EC-Pro",
+                manufacturer="Helios",
+                model="EC-Pro",
+            )
+            self._attr_unique_id = f"{entry.entry_id}-icing-protection"
+            self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        except Exception:
+            pass
+
+    @property
+    def name(self) -> str:
+        return "Eisüberwachung enable"
+
+    @property
+    def icon(self) -> str | None:
+        return "mdi:snowflake-thermometer" if self.is_on else "mdi:snowflake-off"
+
+    @property
+    def is_on(self) -> bool:
+        return bool(getattr(self._coord, "icing_protection_enabled", False))
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        setattr(self._coord, "icing_protection_enabled", True)
+        self._is_on = True
+        self.async_write_ha_state()
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        setattr(self._coord, "icing_protection_enabled", False)
+        self._is_on = False
+        self.async_write_ha_state()
+
+    async def async_added_to_hass(self) -> None:
+        try:
+            if hasattr(self._coord, "register_entity"):
+                self._coord.register_entity(self)
+        except Exception:
+            pass
 
 
 class HeliosDebugScanSwitch(SwitchEntity):

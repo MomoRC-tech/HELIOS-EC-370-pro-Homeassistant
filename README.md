@@ -28,14 +28,17 @@ A3. [Debug & Protocol Details](#debug--protocol-details)
 This integration provides local push/poll control and monitoring for Helios EC-Pro ventilation units. It communicates with the device via a TCP bridge (Waveshare/ESP32) connected to the RS-485 bus, enabling real-time updates and control from Home Assistant.
 
 ## 2. Features
-- Real-time fan level, auto mode, filter warning, and temperature sensors
-- Control fan level and auto mode
-- Calendar-based weekly scheduling
-- Device clock synchronization
-- Diagnostic sensors for filter and clock status
-- Lovelace dashboard support
-- Debug: one‑shot scan over Helios variables with a single INFO summary + file exports
-- Debug: RS‑485 stream logger switch to capture raw RX/TX frames to an HTML file with statistics (auto‑off after 15 minutes)
+ - Real-time fan level, auto mode, filter warning, and temperature sensors
+ - Control fan level and auto mode
+ - Calendar-based weekly scheduling
+ - Device clock synchronization
+ - Diagnostic sensors for filter and clock status
+ - Lovelace dashboard support
+ - Debug: one‑shot scan over Helios variables with a single INFO summary + file exports
+ - Debug: RS‑485 stream logger switch to capture raw RX/TX frames to an HTML file with statistics (auto‑off after 15 minutes)
+ - Icing protection: If the outdoor temperature (temp_outdoor) stays below the configurable frost protection threshold (sensor.helios_ec_pro_frostschutz_temperatur) for more than 10 minutes, the fan is automatically set to level 0 and the "Eisschutz status" binary sensor is activated. The sensor resets when the fan level is set again.
+ - Switch entity "Eisüberwachung enable" allows toggling the icing protection feature.
+ - Binary sensor "Eisschutz status" indicates when icing protection is active.
 
 ## 3. Hardware Requirements
 - Helios EC-Pro 270/370 (pre 2014) ventilation unit
@@ -108,21 +111,23 @@ The integration exposes the following entities:
   - Debug, one‑shot variable scan (stable id: `switch.helios_ec_pro_variablen_scan_debug`)
   - Lüftung EIN/AUS (Stufe 1): simple ON/OFF for manual level 1 vs level 0
   - RS‑485 Logger (diagnostic)
+    - Eisüberwachung enable (icing protection toggle)
 - **Binary Sensors**:
   - Filter warning
   - Clock sync status
   - Party mode
   - External contact
+    - Eisschutz status (icing protection active)
 
 ## 7. Services
-- `set_auto_mode` (enabled: boolean)
-- `set_fan_level` (level: 0–4)
-- `set_party_enabled` (enabled: boolean)
-- `calendar_request_day` (day: 0..6)
-- `calendar_set_day` (day: 0..6, levels: exactly 48 integers 0..4)
-- `calendar_copy_day` (source_day: 0..6, preset: none|weekday, all_days: bool, target_days: [0..6])
-- `set_device_datetime` (year, month, day, hour, minute)
-- `sync_device_time`: Sync device clock to Home Assistant host
+`set_auto_mode` (enabled: boolean): Set the device to automatic mode.
+`set_fan_level` (level: 0–4): Set the fan level of the device.
+`set_party_enabled` (enabled: boolean): Enable or disable party mode.
+`calendar_request_day` (day: 0..6): Request the calendar for a specific day.
+`calendar_set_day` (day: 0..6, levels: exactly 48 integers 0..4): Set the calendar for a specific day with levels.
+`calendar_copy_day` (source_day: 0..6, preset: none|weekday, all_days: bool, target_days: [0..6]): Copy settings from one day to another.
+`set_device_datetime` (year, month, day, hour, minute): Set the device's date and time.
+`sync_device_time`: Sync device clock to Home Assistant host.
 
 ## 8. Protocol basics (generic)
 

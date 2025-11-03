@@ -59,6 +59,33 @@ class HeliosCoordinator:
 
     def update_values(self, new_values: Dict[str, Any]):
         changed = False
+        icing_check_time = None
+        icing_threshold = None
+        # Get current frostschutz temperature from state if available
+        try:
+            icing_threshold = float(self.hass.states.get("sensor.helios_ec_pro_frostschutz_temperatur").state)
+        except Exception:
+            icing_threshold = 4.0
+        # Track icing protection logic
+        if getattr(self, "icing_protection_enabled", False):
+            temp_outdoor = new_values.get("temp_outdoor", self.data.get("temp_outdoor"))
+            fan_level = new_values.get("fan_level", self.data.get("fan_level"))
+            now = time.time()
+            if temp_outdoor is not None:
+                if temp_outdoor < icing_threshold:
+                    if not hasattr(self, "_icing_start_time") or self._icing_start_time is None:
+                        self._icing_start_time = now
+                    elif now - self._icing_start_time > 600:
+                        # 10 minutes below threshold
+                        if fan_level != 0 and hasattr(self, "set_fan_level"):
+                            self.set_fan_level(0)
+                        self.data["icing_protection_active"] = True
+                else:
+                    self._icing_start_time = None
+                    self.data["icing_protection_active"] = False
+            # Reset icing protection if fan level is set again
+            if fan_level != 0 and self.data.get("icing_protection_active"):
+                self.data["icing_protection_active"] = False
         for k, v in new_values.items():
             if k.startswith("_"):
                 continue

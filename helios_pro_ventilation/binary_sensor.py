@@ -17,6 +17,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 		HeliosBinarySensor(coord, "party_enabled", "Partymodus aktiv", entry),
 		HeliosBinarySensor(coord, "ext_contact", "Externer Kontakt", entry),
 		HeliosBinarySensor(coord, "device_clock_in_sync", "Geräteuhr synchron", entry),
+		HeliosBinarySensor(coord, "icing_protection_active", "Eisschutz status", entry),
 	]
 	async_add_entities(entities)
 
