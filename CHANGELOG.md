@@ -1,3 +1,11 @@
+## 5.4.3 — 2025-11-03
+
+Patch release
+- Entity: Icing protection switch ('Eisüberwachung enable') added; uses diagnostic category.
+- Bugfix: async_add_entities placement in switch.py corrected for proper entity setup.
+- Docs: README.md updated to remove unimplemented send_command service and document icing protection features.
+- Manifest: Version bumped to 5.4.3.
+
 ## 5.3.3 — 2025-10-17
 
 Maintenance release
