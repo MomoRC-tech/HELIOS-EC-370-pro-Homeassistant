@@ -89,6 +89,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         HeliosNumberSensor(coord, "fan3_voltage_abluft", "Stufe 3 Spannung Abluft", "V", entry),
         HeliosNumberSensor(coord, "fan4_voltage_zuluft", "Stufe 4 Spannung Zuluft", "V", entry),
         HeliosNumberSensor(coord, "fan4_voltage_abluft", "Stufe 4 Spannung Abluft", "V", entry),
+        HeliosNumberSensor(coord, "icing_triggers_24h", "Eisschutz Auslösungen (24h)", None, entry),
     HeliosTextSensor(coord, "software_version", "Software Version", entry),
     HeliosTextSensor(coord, "weekday_name", "Wochentag (Gerät)", entry),
     HeliosTextSensor(coord, "date_str", "Datum (Gerät)", entry),
