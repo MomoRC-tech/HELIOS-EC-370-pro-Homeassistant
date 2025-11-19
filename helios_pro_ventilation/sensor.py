@@ -80,20 +80,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         HeliosNumberSensor(coord, "bypass1_temp", "Bypass Temperatur 1", "°C", entry),
         HeliosNumberSensor(coord, "frostschutz_temp", "Frostschutz Temperatur", "°C", entry),
         HeliosNumberSensor(coord, "nachlaufzeit_s", "Nachlaufzeit", "s", entry),
-    HeliosNumberSensor(coord, "device_clock_drift_min", "Geräteuhr Abweichung", "min", entry),
-        HeliosNumberSensor(coord, "fan1_voltage_zuluft", "Stufe 1 Spannung Zuluft", "V", entry),
-        HeliosNumberSensor(coord, "fan1_voltage_abluft", "Stufe 1 Spannung Abluft", "V", entry),
-        HeliosNumberSensor(coord, "fan2_voltage_zuluft", "Stufe 2 Spannung Zuluft", "V", entry),
-        HeliosNumberSensor(coord, "fan2_voltage_abluft", "Stufe 2 Spannung Abluft", "V", entry),
-        HeliosNumberSensor(coord, "fan3_voltage_zuluft", "Stufe 3 Spannung Zuluft", "V", entry),
-        HeliosNumberSensor(coord, "fan3_voltage_abluft", "Stufe 3 Spannung Abluft", "V", entry),
-        HeliosNumberSensor(coord, "fan4_voltage_zuluft", "Stufe 4 Spannung Zuluft", "V", entry),
-        HeliosNumberSensor(coord, "fan4_voltage_abluft", "Stufe 4 Spannung Abluft", "V", entry),
-    HeliosTextSensor(coord, "software_version", "Software Version", entry),
-    HeliosTextSensor(coord, "weekday_name", "Wochentag (Gerät)", entry),
-    HeliosTextSensor(coord, "date_str", "Datum (Gerät)", entry),
-    HeliosTextSensor(coord, "time_str", "Uhrzeit (Gerät)", entry),
-    HeliosTextSensor(coord, "device_date_time_state", "Geräteuhr Status", entry),
+        HeliosNumberSensor(coord, "device_clock_drift_min", "Geräteuhr Abweichung", "min", entry),
+        HeliosTextSensor(coord, "software_version", "Software Version", entry),
+        HeliosTextSensor(coord, "weekday_name", "Wochentag (Gerät)", entry),
+        HeliosTextSensor(coord, "date_str", "Datum (Gerät)", entry),
+        HeliosTextSensor(coord, "time_str", "Uhrzeit (Gerät)", entry),
+        HeliosTextSensor(coord, "device_date_time_state", "Geräteuhr Status", entry),
+        HeliosNumberSensor(coord, "icing_triggers_24h", "Eisschutz Auslösungen (24h)", None, entry),
     ]
     # Diagnostic sensors for calendar day visibility (disabled by default)
     day_names = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
@@ -186,4 +179,3 @@ class HeliosNumberSensor(HeliosBaseEntity, SensorEntity):
     def native_value(self): return self._coord.data.get(self._key)
     @property
     def native_unit_of_measurement(self): return self._unit
-
