@@ -28,6 +28,12 @@ class HeliosCoordinator:
             self.allowed_ping_addrs = {int(CLIENT_ID)}
         except Exception:
             self.allowed_ping_addrs = set()
+        # Icing protection defaults
+        self.icing_protection_enabled = True  # default ON
+        self.data["icing_protection_active"] = False  # binary sensor starts OFF
+        self._icing_start_time = None  # internal timer for detection window
+        self._icing_trigger_ts = deque()  # store activation timestamps
+        self.data["icing_triggers_24h"] = 0  # number sensor default
 
     def register_entity(self, entity):
         self.entities.append(entity)
@@ -68,6 +74,8 @@ class HeliosCoordinator:
             icing_threshold = 4.0
         # Track icing protection logic
         if getattr(self, "icing_protection_enabled", False):
+            # Remember previous state for rising edge detection
+            was_active = bool(self.data.get("icing_protection_active", False))
             temp_outdoor = new_values.get("temp_outdoor", self.data.get("temp_outdoor"))
             fan_level = new_values.get("fan_level", self.data.get("fan_level"))
             now = time.time()
@@ -86,6 +94,26 @@ class HeliosCoordinator:
             # Reset icing protection if fan level is set again
             if fan_level != 0 and self.data.get("icing_protection_active"):
                 self.data["icing_protection_active"] = False
+            # Detect rising edge (inactive→active) and record timestamp
+            is_active = bool(self.data.get("icing_protection_active", False))
+            if is_active and not was_active:
+                # Rising edge detected - record activation
+                if not hasattr(self, "_icing_trigger_ts"):
+                    self._icing_trigger_ts = deque()
+                self._icing_trigger_ts.append(now)
+                _LOGGER.info("Icing protection activated - trigger recorded (count: %d)", len(self._icing_trigger_ts))
+        # Purge old timestamps (>24h) and update counter
+        if hasattr(self, "_icing_trigger_ts"):
+            now = time.time()
+            cutoff = now - (24 * 3600)
+            # Remove timestamps older than 24 hours
+            while self._icing_trigger_ts and self._icing_trigger_ts[0] < cutoff:
+                self._icing_trigger_ts.popleft()
+            # Update the counter in data
+            count = len(self._icing_trigger_ts)
+            if self.data.get("icing_triggers_24h") != count:
+                self.data["icing_triggers_24h"] = count
+                changed = True
         for k, v in new_values.items():
             if k.startswith("_"):
                 continue
