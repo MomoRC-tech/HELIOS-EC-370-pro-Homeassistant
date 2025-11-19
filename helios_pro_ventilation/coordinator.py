@@ -28,6 +28,10 @@ class HeliosCoordinator:
             self.allowed_ping_addrs = {int(CLIENT_ID)}
         except Exception:
             self.allowed_ping_addrs = set()
+        # Initialize icing protection flags to well-defined defaults
+        self.icing_protection_enabled = False  # switch default state
+        self.data["icing_protection_active"] = False  # binary sensor default state
+        self._icing_start_time = None  # internal timer baseline for icing detection window
 
     def register_entity(self, entity):
         self.entities.append(entity)
