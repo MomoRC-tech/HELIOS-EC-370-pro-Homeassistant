@@ -1,3 +1,12 @@
+## 5.4.4 — 2025-11-19
+
+Patch release
+- Feature: Icing protection now enabled by default at startup (switch "Eisüberwachung enable" defaults to ON).
+- Feature: Added rolling 24-hour counter sensor "Eisschutz Auslösungen (24h)" to track icing protection activation frequency.
+- Enhancement: Icing protection status binary sensor now properly initializes to OFF at startup.
+- Enhancement: Improved reset logic for icing protection - only deactivates when user manually changes fan from 0 to non-zero.
+- Tests: Added comprehensive test suite for icing protection (initialization, tracking, rolling window, resets).
+
 ## 5.4.3 — 2025-11-03
 
 Patch release
