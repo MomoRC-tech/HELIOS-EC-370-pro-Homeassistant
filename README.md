@@ -25,7 +25,7 @@ A3. [Debug & Protocol Details](#debug--protocol-details)
 ---
 
 ## 1. Overview
-This integration provides local push/poll control and monitoring for Helios EC-Pro ventilation units. It communicates with the device via a TCP bridge (Waveshare/ESP32) connected to the RS-485 bus.
+This integration provides local push/poll control and monitoring for Helios EC-Pro ventilation units. It communicates with the device via a TCP bridge (Waveshare/ESP32) connected to the RS-485 bus, enabling real-time updates and control from Home Assistant.
 
 ## 2. Features
  - Real-time fan level, auto mode, filter warning, and temperature sensors
@@ -36,12 +36,9 @@ This integration provides local push/poll control and monitoring for Helios EC-P
  - Lovelace dashboard support
  - Debug: one‑shot scan over Helios variables with a single INFO summary + file exports
  - Debug: RS‑485 stream logger switch to capture raw RX/TX frames to an HTML file with statistics (auto‑off after 15 minutes)
- - Icing protection: If the outdoor temperature (temp_outdoor) stays below the configurable frost protection threshold (sensor.helios_ec_pro_frostschutz_temperatur) for more than 10 minutes, the fan level is forced to 0 to reduce icing risk.
- - Switch entity "Eisüberwachung enable" allows toggling the icing protection feature (enabled by default).
+ - Icing protection: If the outdoor temperature (temp_outdoor) stays below the configurable frost protection threshold (sensor.helios_ec_pro_frostschutz_temperatur) for more than 10 minutes, the fan is automatically set to level 0 and the "Eisschutz status" binary sensor is activated. The sensor resets when the fan level is set again.
+ - Switch entity "Eisüberwachung enable" allows toggling the icing protection feature.
  - Binary sensor "Eisschutz status" indicates when icing protection is active.
- - Counter sensor "Eisschutz Auslösungen (24h)" shows how many times icing protection was triggered in the last 24 hours (rolling window; updates automatically).
- - Service `reset_icing_trigger_counter` to manually reset the rolling counter.
- - Long‑term statistics compatible icing trigger counter (state_class=measurement)
 
 ## 3. Hardware Requirements
 - Helios EC-Pro 270/370 (pre 2014) ventilation unit
@@ -106,8 +103,7 @@ The integration exposes the following entities:
   - Nachlaufzeit (Sekunden) (Var 0x49)
   - Software Version (Var 0x48)
   - Datum (Gerät), Uhrzeit (Gerät), Wochentag (Gerät)
-  - Eisschutz Auslösungen (24h) (rolling icing trigger count, measurement)
-- **Diagnostic sensors (disabled by default):**
+  - **Diagnostic sensors (disabled by default):**
     - Kalender Montag … Sonntag — expose raw 48-slot arrays as JSON-like text for visibility
 - **Switches**:
   - Party mode
@@ -115,30 +111,30 @@ The integration exposes the following entities:
   - Debug, one‑shot variable scan (stable id: `switch.helios_ec_pro_variablen_scan_debug`)
   - Lüftung EIN/AUS (Stufe 1): simple ON/OFF for manual level 1 vs level 0
   - RS‑485 Logger (diagnostic)
-  - Eisüberwachung enable (icing protection toggle)
+    - Eisüberwachung enable (icing protection toggle)
 - **Binary Sensors**:
   - Filter warning
   - Clock sync status
   - Party mode
   - External contact
-  - Eisschutz status (icing protection active)
+    - Eisschutz status (icing protection active)
 
 ## 7. Services
-| Service | Description | Params |
-|---------|-------------|--------|
-| `helios_pro_ventilation.set_auto_mode` | Enable/disable AUTO mode | enabled: bool |
-| `helios_pro_ventilation.set_fan_level` | Set manual fan level | level: 0..4 |
-| `helios_pro_ventilation.set_party_enabled` | Enable/disable Party mode | enabled: bool |
-| `helios_pro_ventilation.calendar_request_day` | Request calendar for day | day: 0..6 |
-| `helios_pro_ventilation.calendar_set_day` | Write calendar day (48 slots) | day: 0..6, levels: [48x 0..4] |
-| `helios_pro_ventilation.calendar_copy_day` | Copy calendar day to targets | source_day, preset, all_days, target_days |
-| `helios_pro_ventilation.set_device_datetime` | Set device date/time | year, month, day, hour, minute |
-| `helios_pro_ventilation.sync_device_time` | Sync device clock to HA time | (none) |
-| `helios_pro_ventilation.reset_icing_trigger_counter` | Reset icing 24h trigger counter | (none) |
+`set_auto_mode` (enabled: boolean): Set the device to automatic mode.
+`set_fan_level` (level: 0–4): Set the fan level of the device.
+`set_party_enabled` (enabled: boolean): Enable or disable party mode.
+`calendar_request_day` (day: 0..6): Request the calendar for a specific day.
+`calendar_set_day` (day: 0..6, levels: exactly 48 integers 0..4): Set the calendar for a specific day with levels.
+`calendar_copy_day` (source_day: 0..6, preset: none|weekday, all_days: bool, target_days: [0..6]): Copy settings from one day to another.
+`set_device_datetime` (year, month, day, hour, minute): Set the device's date and time.
+`sync_device_time`: Sync device clock to Home Assistant host.
 
 ## 8. Protocol basics (generic)
+
 **Protocol implementation for pre-2014 Helios (variables and addresses) can be found in [`helios_pro_ventilation/const.py`](helios_pro_ventilation/const.py).**
+
 This integration talks the simple Helios EC‑Pro RS‑485 protocol. A quick reference:
+
 - Checksum
   - For all frames, the last byte is a checksum: chk = (sum(all previous bytes) + 1) & 0xFF.
 - Generic variable frames (read/write)
@@ -162,6 +158,7 @@ This integration talks the simple Helios EC‑Pro RS‑485 protocol. A quick ref
 Example (read Var_3A):
 - Request: [0x11, 0x00, 0x01, 0x3A, chk]
 - The checksum is computed from the first 4 bytes: chk = (0x11 + 0x00 + 0x01 + 0x3A + 1) & 0xFF.
+
 ## 9. Troubleshooting
 - If entities don’t update, verify the bridge connection and check logs for missing pings.
 - If write commands don’t take effect, ensure the bus’s ping window is being detected (send slot opens ~80 ms after ping).
@@ -172,13 +169,16 @@ Example (read Var_3A):
 MIT — see LICENSE
 
 ## 11. Changelog
-See CHANGELOG.md
+See [CHANGELOG.md](CHANGELOG.md)
+
 
 ## 12. Annex
+
 ### Calendar Editor UI
 You can view and edit the weekly schedule directly in Home Assistant:
 - **Sidebar:** Look for “Helios Calendar” in the sidebar (if enabled).
 - **Direct link:** Open `http://<YOUR_HOMEASSISTANT.local:8123>/api/helios_pro_ventilation/calendar.html` in your browser.
+
 **Tip:** Add a dashboard Markdown card for one-click access:
 ```yaml
 type: markdown
@@ -186,6 +186,7 @@ title: Helios Kalender
 content: |
   [🗓️ Kalender öffnen](http://<YOUR_HOMEASSISTANT.local:8123>/api/helios_pro_ventilation/calendar.html)
 ```
+
 **Editor features:**
 - 7 rows (Mon..Sun), 48 half-hour slots per day
 - Brush painting: pick a level (0–4), drag to paint
@@ -194,51 +195,64 @@ content: |
 - Unsaved indicator: days with local changes show a red bullet; click Save on the row or “Save selected”
 - Refresh reloads current values; missing days will be queued for reading
 - Toolbar shows a compact clock/status caption (state, date/time, drift, sync) when available
-  
+
+
+
 ## Supported Hardware and wiring
+
 ## ⚠️ Very important: safety & wiring variants
+- **Work only on electrical installations if you’re trained and understand the risks.**
+- **The Helios bus carries ~+24.5 V. Shorting +24.5 V to any RS-485 pin can damage the controller and/or your interface. Disconnect power before wiring and verify with a DMM.**
+- **Docs discrepancy (4-pin vs 6-pin): always meter first.**
+- Some models show RS-485 on RJ-10 (4P4C), while others (like my pre-2014 EC 370 Pro) effectively expose it on RJ-12 (6P6C). Always confirm pin polarity/roles with a meter before connecting.
 
-**Work only on electrical installations if you’re trained and understand the risks.**
 
-**The Helios bus carries ~+24.5 V. Shorting +24.5 V to any RS-485 pin can damage the controller and/or your interface. Disconnect power before wiring and verify with a DMM.**
-
-**Docs discrepancy (4-pin vs 6-pin): always meter first.**
-Some models show RS-485 on RJ-10 (4P4C), while others (like my pre-2014 EC 370 Pro) effectively expose it on RJ-12 (6P6C). Always confirm pin polarity/roles with a meter before connecting.
 
 **My RJ-12 (6-pin) BUS pinout to the HELIOS-BCU (EC 370 Pro, no interface box):**
 
-*Orientation*
-**Plug view: **
-hold the plug with the clip down and gold contacts facing you → pins 1 → 6 left to right.
+  **Orientation**
 
-Plug (6P6C) — clip down, contacts facing you
-+-------------------------------------------+
-| 1   2   3   4   5   6                     |
-| |   |   |   |   |   |                     |
-+-------------------------------------------+
+  **Plug view:**
 
-**Jack view:** 
-look into the socket with the clip slot up → pins 6 → 1 left to right.
+  hold the plug with the clip down and gold contacts facing you → pins 1 → 6 left to right.
 
-Jack (6P6C) — looking into socket, clip slot up
-+-------------------------------------------+
-|                     | | | | | |           |
-|                     6 5 4 3 2 1           |
-+-------------------------------------------+
+      Plug (6P6C) — clip down, contacts facing you
+
+      ```text
+      +--------------------------+
+      | 1   2   3   4   5   6    |
+      | |   |   |   |   |   |    |
+      +--------------------------+
+      ```
+
+  **Jack view:** 
+  
+  look into the socket with the clip slot up → pins 6 → 1 left to right.
+
+    Jack (6P6C) — looking into socket, clip slot up
+      ```text
+      +--------------------+
+      |   | | | | | |      |
+      |   6 5 4 3 2 1      |
+      +--------------------+
+      ```
+
+  **Pin	Signal	        Notes**
+  ```text
+  1	  +24.5V	          BUS supply (approx. 24–25 V)
+  2	  RS485-A	          A / D+
+  3	  RS485-B	          B / D–
+  4	  (unknown)	        —
+  5	  (unknown)	        —
+  6	  GND	              BUS-GND / 0 V
+  ```
+  Quick sanity check: You should measure ~24–25 V DC between Pin 1 (+) and Pin 6 (GND) before wiring your adapter.## ⚠️ Very important: safety & wiring variants
 
 
-Pin	Signal	Notes
-1	+24.5 V	BUS supply (approx. 24–25 V)
-2	RS485-A	A / D+
-3	RS485-B	B / D–
-4	(unknown)	—
-5	(unknown)	—
-6	GND	BUS-GND / 0 V
-
-Quick sanity check: You should measure ~24–25 V DC between Pin 1 (+) and Pin 6 (GND) before wiring your adapter.
 **Termination & topology (updated):**
 RS-485 best practice is daisy-chain (“party line”) with 120 Ω at the two physical ends. However, in practice on these Helios systems, no additional termination has been required in many installs (your experience too).
 Recommendation: Start with the factory/default state (no extra terminators added). Only add or enable termination if you see bus instability on long runs or in noisy environments. Use a twisted pair for A/B and share BUS-GND as reference with your adapter.
+
 ### 1. Waveshare RS485-to-Ethernet Module (Tested & Recommended)
 - **Model:** Waveshare RS485 TO ETH (commonly available module)
 - **Setup:**
@@ -247,14 +261,19 @@ Recommendation: Start with the factory/default state (no extra terminators added
   - Use 19200 baud, 8 data bits, no parity, 1 stop bit (8N1).
   - Default IP/Port: `192.168.0.51:8234` (can be customized).
 - **Status:** Fully tested and stable. Recommended for most users seeking a reliable, plug-and-play solution.
+
 **Example: Working Waveshare RS485-to-Ethernet Configuration**
+
 ![Waveshare RS485-to-Ethernet working configuration](https://raw.githubusercontent.com/MomoRC-tech/HELIOS-EC-370-pro-Homeassistant/main/waveshare_config_example.png)
+
 **Key settings:**
 - Device IP: `192.168.0.51`, Device Port: `8234`
 - Work Mode: `TCP Server`, Baud Rate: `19200`, Databits: `8`, Stopbits: `1`, Parity: `None`
 - Flow control: `None`, Protocol: `None`, No-Data-Restart: `Disable`
 - Multi-host: `Yes` (default), IP mode: `Static`
+
 This matches the defaults expected by the integration. Adjust the IP/port as needed for your network.
+
 ### 2. DIY: ESP32 with RS485 Transceiver (Advanced, Community-Supported)
 - **Hardware:** ESP32 development board and RS485 transceiver module (e.g., MAX485 or similar).
 - **Setup:**
@@ -264,9 +283,12 @@ This matches the defaults expected by the integration. Adjust the IP/port as nee
   - Exposes a TCP socket on a configurable port and IP.
 - **Firmware:** Many open-source examples exist (e.g., Espressif or Arduino-based transparent serial bridge projects).
 - **Status:** Experimental but functional. Allows for wireless or custom integration, suitable for advanced users.
+
 **Notes:**
 - Both solutions must operate as a transparent TCP bridge (no protocol translation, just raw RS485-to-TCP tunneling).
 - The integration expects to connect to a TCP socket that directly exposes the Helios EC‑Pro RS‑485 protocol.
+
+
 ## Debug & Protocol Details
 
 ### Debug: One‑shot var scan
