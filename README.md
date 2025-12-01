@@ -194,28 +194,39 @@ content: |
 - Unsaved indicator: days with local changes show a red bullet; click Save on the row or “Save selected”
 - Refresh reloads current values; missing days will be queued for reading
 - Toolbar shows a compact clock/status caption (state, date/time, drift, sync) when available
+  
 ## Supported Hardware and wiring
 ## ⚠️ Very important: safety & wiring variants
+
 **Work only on electrical installations if you’re trained and understand the risks.**
+
 **The Helios bus carries ~+24.5 V. Shorting +24.5 V to any RS-485 pin can damage the controller and/or your interface. Disconnect power before wiring and verify with a DMM.**
+
 **Docs discrepancy (4-pin vs 6-pin): always meter first.**
 Some models show RS-485 on RJ-10 (4P4C), while others (like my pre-2014 EC 370 Pro) effectively expose it on RJ-12 (6P6C). Always confirm pin polarity/roles with a meter before connecting.
+
 **My RJ-12 (6-pin) BUS pinout to the HELIOS-BCU (EC 370 Pro, no interface box):**
+
 *Orientation*
 **Plug view: **
 hold the plug with the clip down and gold contacts facing you → pins 1 → 6 left to right.
+
 Plug (6P6C) — clip down, contacts facing you
 +-------------------------------------------+
 | 1   2   3   4   5   6                     |
 | |   |   |   |   |   |                     |
 +-------------------------------------------+
+
 **Jack view:** 
 look into the socket with the clip slot up → pins 6 → 1 left to right.
+
 Jack (6P6C) — looking into socket, clip slot up
 +-------------------------------------------+
 |                     | | | | | |           |
 |                     6 5 4 3 2 1           |
 +-------------------------------------------+
+
+
 Pin	Signal	Notes
 1	+24.5 V	BUS supply (approx. 24–25 V)
 2	RS485-A	A / D+
@@ -223,6 +234,7 @@ Pin	Signal	Notes
 4	(unknown)	—
 5	(unknown)	—
 6	GND	BUS-GND / 0 V
+
 Quick sanity check: You should measure ~24–25 V DC between Pin 1 (+) and Pin 6 (GND) before wiring your adapter.
 **Termination & topology (updated):**
 RS-485 best practice is daisy-chain (“party line”) with 120 Ω at the two physical ends. However, in practice on these Helios systems, no additional termination has been required in many installs (your experience too).
