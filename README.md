@@ -172,9 +172,13 @@ MIT — see LICENSE
 See [CHANGELOG.md](CHANGELOG.md)
 
 
+
+
+
+
 ## 12. Annex
 
-### Calendar Editor UI
+## Calendar Editor UI
 You can view and edit the weekly schedule directly in Home Assistant:
 - **Sidebar:** Look for “Helios Calendar” in the sidebar (if enabled).
 - **Direct link:** Open `http://<YOUR_HOMEASSISTANT.local:8123>/api/helios_pro_ventilation/calendar.html` in your browser.
@@ -200,7 +204,7 @@ content: |
 
 ## Supported Hardware and wiring
 
-## ⚠️ Very important: safety & wiring variants
+⚠️ **Very important: safety & wiring variants**
 - **Work only on electrical installations if you’re trained and understand the risks.**
 - **The Helios bus carries ~+24.5 V. Shorting +24.5 V to any RS-485 pin can damage the controller and/or your interface. Disconnect power before wiring and verify with a DMM.**
 - **Docs discrepancy (4-pin vs 6-pin): always meter first.**
@@ -208,7 +212,7 @@ content: |
 
 
 
-**My RJ-12 (6-pin) BUS pinout to the HELIOS-BCU (EC 370 Pro, no interface box):**
+### My RJ-12 (6-pin) BUS pinout to the HELIOS-BCU (EC 370 Pro, no interface box):
 
   **Orientation**
 
@@ -250,10 +254,11 @@ content: |
 
 
 **Termination & topology (updated):**
+
 RS-485 best practice is daisy-chain (“party line”) with 120 Ω at the two physical ends. However, in practice on these Helios systems, no additional termination has been required in many installs (your experience too).
 Recommendation: Start with the factory/default state (no extra terminators added). Only add or enable termination if you see bus instability on long runs or in noisy environments. Use a twisted pair for A/B and share BUS-GND as reference with your adapter.
 
-### 1. Waveshare RS485-to-Ethernet Module (Tested & Recommended)
+### A) Waveshare RS485-to-Ethernet Module (Tested & Recommended)
 - **Model:** Waveshare RS485 TO ETH (commonly available module)
 - **Setup:**
   - Connects directly to the Helios EC‑Pro RS‑485 bus.
@@ -274,7 +279,9 @@ Recommendation: Start with the factory/default state (no extra terminators added
 
 This matches the defaults expected by the integration. Adjust the IP/port as needed for your network.
 
-### 2. DIY: ESP32 with RS485 Transceiver (Advanced, Community-Supported)
+
+
+### B) DIY: ESP32 with RS485 Transceiver (Advanced, Community-Supported)
 - **Hardware:** ESP32 development board and RS485 transceiver module (e.g., MAX485 or similar).
 - **Setup:**
   - ESP32 runs custom firmware to act as a transparent TCP server bridging RS485 and Ethernet/WiFi.
@@ -287,6 +294,8 @@ This matches the defaults expected by the integration. Adjust the IP/port as nee
 **Notes:**
 - Both solutions must operate as a transparent TCP bridge (no protocol translation, just raw RS485-to-TCP tunneling).
 - The integration expects to connect to a TCP socket that directly exposes the Helios EC‑Pro RS‑485 protocol.
+
+
 
 
 ## Debug & Protocol Details
