@@ -65,7 +65,7 @@ async def async_setup(hass: HomeAssistant, config: dict):
     }
     existing = hass.config_entries.async_entries(DOMAIN)
     for e in existing:
-        if e.source == SOURCE_IMPORT or e.data.get("host") == data["host":
+        if e.source == SOURCE_IMPORT or e.data.get("host") == data["host"]:
             return True
     await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_IMPORT}, data=data
